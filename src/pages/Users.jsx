@@ -45,10 +45,16 @@ export default function Users() {
   const handleInvite = async () => {
     setInviting(true);
     const role = inviteRole;
-    await dataClient.users.inviteUser(inviteEmail, role);
-    setInviting(false);
-    setShowInvite(false);
-    setInviteEmail('');
+    try {
+      await dataClient.users.inviteUser(inviteEmail, role);
+      setShowInvite(false);
+      setInviteEmail('');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    } catch (error) {
+      alert('Não foi possível enviar o convite: ' + error.message);
+    } finally {
+      setInviting(false);
+    }
   };
 
   const isAdmin = currentUser?.role === 'admin';
