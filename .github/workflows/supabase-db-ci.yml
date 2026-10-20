@@ -1,0 +1,45 @@
+name: CI • Supabase SQL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/supabase-db-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      OPENAI_API_KEY: placeholder-for-local-supabase-studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check local Supabase CLI
+        run: npx --yes supabase@latest --version
+      - name: Start isolated local Supabase and apply migrations
+        run: npx --yes supabase@latest start
+      - name: Recreate local database from all migrations
+        run: npx --yes supabase@latest db reset
+      - name: Verify schema and row-level security
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select case when count(*)>=19 then 1 else 1/0 end from pg_tables where schemaname='public' and rowsecurity=true;"
+          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select case when count(*)=1 then 1 else 1/0 end from information_schema.columns where table_schema='public' and table_name='contract_items' and column_name='price_registration_group_id';"
+          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select case when count(*)=1 then 1 else 1/0 end from information_schema.tables where table_schema='public' and table_name='notification_reads';"
+      - name: Show state on failure
+        if: failure()
+        run: npx --yes supabase@latest status || true
+      - name: Stop local Supabase
+        if: always()
+        run: npx --yes supabase@latest stop || true
