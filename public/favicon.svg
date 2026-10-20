@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Licits">
+  <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <path d="M19 13h20l7 8v29H19z" fill="#fff" opacity=".95"/>
+  <path d="M39 13v9h7" fill="#bfdbfe"/>
+  <path d="M25 29h15M25 36h15M25 43h10" stroke="#2563eb" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="m39 48 4 4 8-9" stroke="#10b981" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

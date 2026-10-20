@@ -46,7 +46,7 @@ export default function Login() {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-extrabold text-xl">ContratoIA</h1>
+            <h1 className="font-extrabold text-xl">Licits</h1>
             <p className="text-xs text-slate-400">Gestão contratual com rastreabilidade</p>
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function Login() {
             Acesso protegido pelo Supabase Auth e dados isolados por organização com Row Level Security.
           </p>
         </div>
-        <p className="relative text-xs text-slate-500">ContratoIA</p>
+        <p className="relative text-xs text-slate-500">Licits</p>
       </section>
 
       <section className="flex items-center justify-center p-6">
