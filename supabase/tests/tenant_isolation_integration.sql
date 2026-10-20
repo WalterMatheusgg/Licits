@@ -120,12 +120,12 @@ values ('d3333333-3333-4333-8333-333333333333',
   'c1111111-1111-4111-8111-111111111111','CI-CRUD-001','Initial contract',500);
 update public.contracts set object='Updated contract', status='ativo'
 where id='d3333333-3333-4333-8333-333333333333';
-do $ begin
+do $verify$ begin
  if not exists (select 1 from public.contracts where
   id='d3333333-3333-4333-8333-333333333333'
   and object='Updated contract' and status='ativo')
  then raise exception 'Contract create/update/read failed'; end if;
-end $;
+end $verify$;
 
 insert into public.documents(id,organization_id,contract_id,title,document_type,storage_bucket,storage_path)
 values ('d4444444-4444-4444-8444-444444444444',
@@ -167,7 +167,7 @@ update public.admin_requests
  admin_response='Verified'
  where id='d7777777-7777-4777-8777-777777777777';
 
-do $ begin
+do $verify$ begin
  if not exists (select 1 from public.documents where id='d4444444-4444-4444-8444-444444444444' and title='Document updated')
  then raise exception 'Document CRUD failed'; end if;
  if not exists (select 1 from public.fiscal_records where id='d5555555-5555-4555-8555-555555555555' and status='concluido')
@@ -180,7 +180,7 @@ do $ begin
  then raise exception 'ARP group update failed'; end if;
  if not exists (select 1 from public.admin_requests where id='d7777777-7777-4777-8777-777777777777' and status='aprovado')
  then raise exception 'Administrative request workflow failed'; end if;
-end $;
+end $verify$;
 
 -- Soft deletion, audit trail and tenant visibility.
 update public.contracts set deleted_at=now(),deleted_by=auth.uid()
@@ -192,7 +192,7 @@ update public.fiscal_records set deleted_at=now(),deleted_by=auth.uid()
 update public.occurrences set deleted_at=now(),deleted_by=auth.uid()
  where id='d6666666-6666-4666-8666-666666666666';
 
-do $ begin
+do $verify$ begin
  if exists(select 1 from public.contracts where id='d3333333-3333-4333-8333-333333333333')
  then raise exception 'Contract soft delete still visible under RLS'; end if;
  if exists(select 1 from public.documents where id='d4444444-4444-4444-8444-444444444444')
@@ -203,19 +203,19 @@ do $ begin
  then raise exception 'Occurrence soft delete still visible under RLS'; end if;
  if not exists (select 1 from public.audit_logs where entity_id='d3333333-3333-4333-8333-333333333333' and action='update')
  then raise exception 'Audit event missing for contract'; end if;
-end $;
+end $verify$;
 
 -- User B must never access User A's business rows via read or write.
 select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
-do $ begin
+do $verify$ begin
  if exists(select 1 from public.price_registrations where id='e1111111-1111-4111-8111-111111111111')
  then raise exception 'Cross-tenant ARP read permitted'; end if;
  if exists(select 1 from public.admin_requests where id='d7777777-7777-4777-8777-777777777777')
  then raise exception 'Cross-tenant admin request leak'; end if;
-end $;
-do $ begin
+end $verify$;
+do $verify$ begin
  update public.price_registration_groups set notes='Unauthorized cross-tenant update'
  where id='e2222222-2222-4222-8222-222222222222';
  if found then raise exception 'Cross-tenant group update permitted'; end if;
-end $;
+end $verify$;
 rollback;
