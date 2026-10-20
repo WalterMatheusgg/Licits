@@ -3,9 +3,9 @@ Deno.serve(async req => {
   const preflight=options(req); if(preflight)return preflight;
   try{
     const {admin,user}=await authorize(req);
+    const body=await req.json();
     const org=String(body.organization_id||'');
     await member(admin,user.id,org,['organization_admin','gestor']);
-    const body=await req.json();
     const path=String(body.storage_path||'');
     if(body.storage_bucket!=='contracts'||!path.startsWith(org+'/')||path.includes('..')||path.length>500)throw Error('Documento fora da organização.');
     const result=await admin.storage.from('contracts').download(path);
