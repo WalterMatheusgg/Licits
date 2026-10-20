@@ -88,6 +88,7 @@ function display(name, row) {
     });
   }
   if (name === 'ContractItem') r.min_qty = r.minimum_qty;
+  if (name === 'PriceRegistration') r.adhesion_organ = r.adhesion_organization;
   if (dualParentEntities.has(name)) r.contract_id = r.contract_id || r.price_registration_group_id;
   if (name === 'ItemWithdrawal') {
     r.item_id = r.contract_item_id;
@@ -225,7 +226,10 @@ async function prepare(name, input, ctx, action) {
     if (!data.storage_path || !data.storage_bucket) fail('Faça o upload do documento antes de salvar.');
     data.document_type = data.document_type || 'outro';
   }
-  if (name === 'PriceRegistration' && !data.registration_type) data.registration_type = 'srp_cfp';
+  if (name === 'PriceRegistration') {
+    if (data.adhesion_organ !== undefined) data.adhesion_organization = data.adhesion_organ;
+    if (!data.registration_type) data.registration_type = 'srp_cfp';
+  }
   for (const key of exposedColumns(name)) {
     if (Object.prototype.hasOwnProperty.call(data, key) && data[key] !== undefined) row[key] = safeText(data[key]);
   }
