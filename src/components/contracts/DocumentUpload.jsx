@@ -30,7 +30,7 @@ export default function DocumentUpload({ contractId, onComplete }) {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      const { file_url } = await dataClient.integrations.Core.UploadFile({ file });
+      const { file_url } = await dataClient.integrations.Core.UploadFile({ file, bucket: 'generated-documents' });
       await dataClient.entities.Document.create({
         contract_id: contractId,
         title,
@@ -39,7 +39,7 @@ export default function DocumentUpload({ contractId, onComplete }) {
         status: 'pendente'
       });
     },
-    onSuccess: onComplete,
+    onSuccess: () => { setFile(null); setTitle(''); setDocType(''); onComplete?.(); },
   });
 
   return (
@@ -56,6 +56,7 @@ export default function DocumentUpload({ contractId, onComplete }) {
           <p className="text-sm">{file ? file.name : 'Selecione um arquivo'}</p>
         </label>
       </div>
+      {uploadMutation.error && <p role="alert" className="text-sm text-red-600">{uploadMutation.error.message}</p>}
       <Button onClick={() => uploadMutation.mutate()} disabled={!title || !docType || !file || uploadMutation.isPending} className="w-full gap-2">
         {uploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
         Enviar Documento

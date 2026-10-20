@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { useAuth } from '@/lib/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { organizationService } from '@/services/organizationService';
 
 const OrganizationContext = createContext(null);
@@ -30,6 +31,9 @@ const storageKey = (userId) => `licits.activeOrganizationId.${userId}`;
 
 export const OrganizationProvider = ({ children }) => {
   const { authUser, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => { queryClient.clear(); }, [authUser?.id, queryClient]);
   const [memberships, setMemberships] = useState([]);
   const [activeOrganizationId, setActiveOrganizationIdState] = useState(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
@@ -92,11 +96,12 @@ export const OrganizationProvider = ({ children }) => {
     );
     if (!membership) throw new Error('Organização indisponível para este usuário.');
 
+    queryClient.clear(); // Não reutilizar cache entre organizações.
     setActiveOrganizationIdState(organizationId);
     if (authUser?.id) {
       window.localStorage.setItem(storageKey(authUser.id), organizationId);
     }
-  }, [memberships, authUser?.id]);
+  }, [memberships, authUser?.id, queryClient]);
 
   const activeMembership = useMemo(
     () => memberships.find((item) => item.organization_id === activeOrganizationId) ?? null,
