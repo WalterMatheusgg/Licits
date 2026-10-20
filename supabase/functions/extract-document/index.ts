@@ -3,7 +3,7 @@ Deno.serve(async req => {
   const preflight=options(req); if(preflight)return preflight;
   try{
     const {admin,user}=await authorize(req);
-    const org=await firstOrg(admin,user.id);
+    const org=String(body.organization_id||'');
     await member(admin,user.id,org,['organization_admin','gestor']);
     const body=await req.json();
     const path=String(body.storage_path||'');
