@@ -47,6 +47,16 @@ jobs:
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 \
             -f supabase/tests/tenant_isolation_integration.sql
+      - name: Validate backup structure from disposable database
+        run: |
+          bash -n scripts/backup-database.sh
+          pg_dump --format=custom --no-owner --no-privileges \
+            --file=/tmp/licits-db-validation.dump \
+            "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          pg_restore --list /tmp/licits-db-validation.dump > /tmp/licits-inventory.txt
+          grep -q "TABLE DATA.*organizations" /tmp/licits-inventory.txt
+          grep -q "TABLE DATA.*contracts" /tmp/licits-inventory.txt
+          rm -f /tmp/licits-db-validation.dump /tmp/licits-inventory.txt
       - name: Show state on failure
         if: failure()
         run: npx --yes supabase@latest status || true
