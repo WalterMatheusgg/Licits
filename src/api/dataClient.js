@@ -99,7 +99,7 @@ function display(name, row) {
     r.file_name = r.attachment_name;
     r.file_url = null;
   }
-  if (name === 'Notification') r.read = !!r.read_at;
+  if (name === 'Notification') r.read = Boolean(r.read_at || r._read_receipt);
   if (name === 'Document') {
     r.file_name = r.original_filename;
     r.file_url = null; // a URL de arquivos privados deve ser assinada no momento do acesso
@@ -141,10 +141,7 @@ async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   if (name === 'Notification') query = query.or('target_user_id.is.null,target_user_id.eq.' + ctx.user.id);
   const realFilter = dualParentEntities.has(name) ? await resolveContractOrArpParent(filter || {}, ctx) : filter || {};
   for (const [field, value] of Object.entries(realFilter)) {
-    if (field === 'read' && name === 'Notification') {
-      query = value ? query.not('read_at', 'is', null) : query.is('read_at', null);
-      continue;
-    }
+    if (field === 'read' && name === 'Notification') continue; // filtro após considerar recibos individuais
     const key = {item_id:'contract_item_id', os_number:'service_order_number', min_qty:'minimum_qty'}[field] || field;
     if (!exposedColumns(name).has(key) && key !== 'id') return fail('Filtro não suportado: ' + field);
     query = value === null ? query.is(key, null) : query.eq(key, value);
@@ -153,7 +150,21 @@ async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   const allowedSort = exposedColumns(name).has(sortField) || ['created_at','updated_at','id'].includes(sortField) ? sortField : 'created_at';
   query = query.order(allowedSort, { ascending: !String(order || '').startsWith('-') });
   if (Number.isInteger(limit) && limit > 0) query = query.limit(Math.min(limit, 1000));
-  return presentWithPrivateFiles(name, unwrap(await query));
+  let rows = unwrap(await query);
+  if (name === 'Notification') {
+    const broadcastIds = rows.filter(row => !row.target_user_id).map(row => row.id);
+    if (broadcastIds.length) {
+      const receipts = unwrap(await supabase.from('notification_reads').select('notification_id')
+        .eq('organization_id', ctx.org).eq('user_id', ctx.user.id)
+        .in('notification_id',broadcastIds));
+      const seen = new Set(receipts.map(item => item.notification_id));
+      rows = rows.map(row => ({...row,_read_receipt: seen.has(row.id)}));
+    }
+    if (typeof realFilter.read === 'boolean') {
+      rows = rows.filter(row => Boolean(row.read_at || row._read_receipt) === realFilter.read);
+    }
+  }
+  return presentWithPrivateFiles(name, rows);
 }
 async function prepare(name, input, ctx, action) {
   const data = dualParentEntities.has(name) ? await resolveContractOrArpParent({...input}, ctx) : {...input};
@@ -243,6 +254,18 @@ async function update(name, id, data) {
   const ctx = await context();
   if (name === 'User') return updateMember(id, data, ctx);
   if (!definitions[name] || name === 'AuditLog' || name === 'ItemWithdrawal') return fail('Atualização não autorizada para ' + name);
+  if (name === 'Notification') {
+    const source = unwrap(await supabase.from('notifications')
+      .select('id,target_user_id').eq('organization_id', ctx.org).eq('id', id).single());
+    if (!source.target_user_id) {
+      if (data.read !== true) return fail('Uma notificação geral não pode ser desmarcada como lida.');
+      unwrap(await supabase.from('notification_reads').upsert({
+        organization_id: ctx.org, notification_id: id, user_id: ctx.user.id,
+        read_at: new Date().toISOString()
+      }, { onConflict: 'notification_id,user_id' }));
+      return {id, read: true};
+    }
+  }
   const row = await prepare(name, data, ctx, 'update');
   if (name === 'Notification') {
     for (const k of Object.keys(row)) if (k !== 'read_at') delete row[k];
