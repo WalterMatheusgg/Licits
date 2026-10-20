@@ -311,12 +311,19 @@ export const dataClient = {
   },
   integrations: { Core: {
     UploadFile: uploadFile,
-    SendEmail: ({ to, subject, body }) => invokeFunction('send-email', { to, subject, body }),
-    InvokeLLM: async ({ prompt, response_json_schema }) => (await invokeFunction('analyze-contract', { prompt, response_json_schema })).result,
+    SendEmail: async ({ to, subject, body }) => {
+      const ctx = await context();
+      return invokeFunction('send-email', { to, subject, body, organization_id: ctx.org });
+    },
+    InvokeLLM: async ({ prompt, response_json_schema }) => {
+      const ctx = await context();
+      return (await invokeFunction('analyze-contract', { prompt, response_json_schema, organization_id: ctx.org })).result;
+    },
     ExtractDataFromUploadedFile: async ({ file_url }) => {
       const stored = uploads.get(file_url);
       if (!stored) return fail('Envie o documento novamente antes de analisar.');
-      return invokeFunction('extract-document', { storage_bucket: stored.bucket, storage_path: stored.path });
+      const ctx = await context();
+      return invokeFunction('extract-document', { storage_bucket: stored.bucket, storage_path: stored.path, organization_id: ctx.org });
     }
   }}
 };
