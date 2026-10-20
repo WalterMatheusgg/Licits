@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -14,13 +14,13 @@ const FISCAL_COLORS = { adequada: '#22c55e', regular: '#f59e0b', baixa: '#ef4444
 export default function Fiscal() {
   const { data: contracts = [] } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date'),
+    queryFn: () => dataClient.entities.Contract.list('-created_date'),
     initialData: [],
   });
 
   const { data: fiscalRecords = [] } = useQuery({
     queryKey: ['fiscal-records-all'],
-    queryFn: () => base44.entities.FiscalRecord.list('-created_date', 50),
+    queryFn: () => dataClient.entities.FiscalRecord.list('-created_date', 50),
     initialData: [],
   });
 

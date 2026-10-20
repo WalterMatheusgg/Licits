@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,11 +30,11 @@ export default function DocumentUpload({ contractId, onComplete }) {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.Document.create({
+      const { file_url } = await dataClient.integrations.Core.UploadFile({ file });
+      await dataClient.entities.Document.create({
         contract_id: contractId,
         title,
-        doc_type: docType,
+        document_type: docType,
         file_url,
         status: 'pendente'
       });

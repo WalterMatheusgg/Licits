@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Button } from '@/components/ui/button';
 import { Upload, Sparkles, Loader2, CheckCircle, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -12,9 +12,10 @@ export default function ContractAIUpload({ onSave, isLoading }) {
   const handleUpload = async () => {
     if (!file) return;
     setExtracting(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    try {
+    const { file_url } = await dataClient.integrations.Core.UploadFile({ file });
 
-    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+    const result = await dataClient.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
         type: "object",
@@ -33,7 +34,7 @@ export default function ContractAIUpload({ onSave, isLoading }) {
     });
 
     if (result.status === 'success' && result.output) {
-      const summary = await base44.integrations.Core.InvokeLLM({
+      const summary = await dataClient.integrations.Core.InvokeLLM({
         prompt: `Analise os dados extraídos deste contrato e gere: 1) Um resumo executivo breve. 2) Principais riscos identificados. 3) Cláusulas críticas. Dados: ${JSON.stringify(result.output)}`,
         response_json_schema: {
           type: "object",
@@ -54,7 +55,11 @@ export default function ContractAIUpload({ onSave, isLoading }) {
         status: 'em_analise'
       });
     }
-    setExtracting(false);
+    } catch (error) {
+      alert('Análise documental indisponível: ' + error.message);
+    } finally {
+      setExtracting(false);
+    }
   };
 
   return (

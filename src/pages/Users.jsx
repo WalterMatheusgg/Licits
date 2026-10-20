@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,12 +28,12 @@ export default function Users() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    dataClient.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => dataClient.entities.User.list(),
     initialData: [],
   });
 
@@ -44,22 +44,28 @@ export default function Users() {
 
   const handleInvite = async () => {
     setInviting(true);
-    const role = inviteRole === 'admin' ? 'admin' : 'user';
-    await base44.users.inviteUser(inviteEmail, role);
-    setInviting(false);
-    setShowInvite(false);
-    setInviteEmail('');
+    const role = inviteRole;
+    try {
+      await dataClient.users.inviteUser(inviteEmail, role);
+      setShowInvite(false);
+      setInviteEmail('');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    } catch (error) {
+      alert('Não foi possível enviar o convite: ' + error.message);
+    } finally {
+      setInviting(false);
+    }
   };
 
   const isAdmin = currentUser?.role === 'admin';
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
+    mutationFn: ({ id, data }) => dataClient.entities.User.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.User.delete(id),
+    mutationFn: (id) => dataClient.entities.User.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 

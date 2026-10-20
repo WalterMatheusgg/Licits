@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -17,14 +17,14 @@ export default function TechnicalCapabilityButton({ contract, contractId }) {
 
   const { data: items = [] } = useQuery({
     queryKey: ['contract-items', contractId],
-    queryFn: () => base44.entities.ContractItem.filter({ contract_id: contractId }),
+    queryFn: () => dataClient.entities.ContractItem.filter({ contract_id: contractId }),
     enabled: !!contractId && open,
     initialData: [],
   });
 
   const { data: occurrences = [] } = useQuery({
     queryKey: ['occurrences', contractId],
-    queryFn: () => base44.entities.Occurrence.filter({ contract_id: contractId }),
+    queryFn: () => dataClient.entities.Occurrence.filter({ contract_id: contractId }),
     enabled: !!contractId && open,
     initialData: [],
   });

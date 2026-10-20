@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Link, useParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,31 +22,31 @@ export default function ContractAnalytics() {
 
   const { data: contract, isLoading } = useQuery({
     queryKey: ['contract', contractId],
-    queryFn: async () => { const list = await base44.entities.Contract.filter({ id: contractId }); return list[0]; },
+    queryFn: async () => { const list = await dataClient.entities.Contract.filter({ id: contractId }); return list[0]; },
     enabled: !!contractId,
   });
 
   const { data: items = [] } = useQuery({
     queryKey: ['contract-items', contractId],
-    queryFn: () => base44.entities.ContractItem.filter({ contract_id: contractId }),
+    queryFn: () => dataClient.entities.ContractItem.filter({ contract_id: contractId }),
     enabled: !!contractId, initialData: [],
   });
 
   const { data: fiscalRecords = [] } = useQuery({
     queryKey: ['fiscal-records', contractId],
-    queryFn: () => base44.entities.FiscalRecord.filter({ contract_id: contractId }, '-fiscal_date'),
+    queryFn: () => dataClient.entities.FiscalRecord.filter({ contract_id: contractId }, '-fiscal_date'),
     enabled: !!contractId, initialData: [],
   });
 
   const { data: occurrences = [] } = useQuery({
     queryKey: ['occurrences', contractId],
-    queryFn: () => base44.entities.Occurrence.filter({ contract_id: contractId }),
+    queryFn: () => dataClient.entities.Occurrence.filter({ contract_id: contractId }),
     enabled: !!contractId, initialData: [],
   });
 
   const { data: withdrawals = [] } = useQuery({
     queryKey: ['withdrawals', contractId],
-    queryFn: () => base44.entities.ItemWithdrawal.filter({ contract_id: contractId }, '-withdrawal_date'),
+    queryFn: () => dataClient.entities.ItemWithdrawal.filter({ contract_id: contractId }, '-withdrawal_date'),
     enabled: !!contractId, initialData: [],
   });
 

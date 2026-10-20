@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,41 +41,41 @@ export default function ContractItemsTab({ contractId, contract }) {
   const [form, setForm] = useState({ group_number: '', item_number: '', description: '', unit: 'UN', contracted_qty: '', min_qty: '', unit_price: '' });
   const queryClient = useQueryClient();
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
   const isAdmin = currentUser?.role === 'admin';
 
   const { data: items = [] } = useQuery({
     queryKey: ['contract-items', contractId],
-    queryFn: () => base44.entities.ContractItem.filter({ contract_id: contractId }),
+    queryFn: () => dataClient.entities.ContractItem.filter({ contract_id: contractId }),
     enabled: !!contractId, initialData: [],
   });
 
   const { data: allWithdrawals = [] } = useQuery({
     queryKey: ['withdrawals', contractId],
-    queryFn: () => base44.entities.ItemWithdrawal.filter({ contract_id: contractId }, '-created_date'),
+    queryFn: () => dataClient.entities.ItemWithdrawal.filter({ contract_id: contractId }, '-created_date'),
     enabled: !!contractId, initialData: [],
   });
 
   const addMutation = useMutation({
-    mutationFn: (data) => base44.entities.ContractItem.create({ ...data, contract_id: contractId }),
+    mutationFn: (data) => dataClient.entities.ContractItem.create({ ...data, contract_id: contractId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['contract-items', contractId] }); setShowAdd(false); setForm({ group_number: '', item_number: '', description: '', unit: 'UN', contracted_qty: '', min_qty: '', unit_price: '' }); }
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ContractItem.update(id, data),
+    mutationFn: ({ id, data }) => dataClient.entities.ContractItem.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['contract-items', contractId] }); setShowEdit(null); setEditForm(null); }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ContractItem.delete(id),
+    mutationFn: (id) => dataClient.entities.ContractItem.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contract-items', contractId] })
   });
 
   const consumeMutation = useMutation({
     mutationFn: async ({ item, cf }) => {
       const qty = parseFloat(cf.quantity);
-      await base44.entities.ContractItem.update(item.id, { used_qty: (item.used_qty || 0) + qty });
-      await base44.entities.ItemWithdrawal.create({
+      // A função SQL register_item_withdrawal atualiza o saldo e grava a baixa em uma transação.
+      await dataClient.entities.ItemWithdrawal.create({
         item_id: item.id, contract_id: contractId,
         os_number: cf.os_number, withdrawal_date: cf.withdrawal_date,
         quantity: qty, notes: cf.notes,
@@ -91,7 +91,7 @@ export default function ContractItemsTab({ contractId, contract }) {
   });
 
   const adjustMutation = useMutation({
-    mutationFn: ({ id, qty }) => base44.entities.ContractItem.update(id, { contracted_qty: parseFloat(qty) }),
+    mutationFn: ({ id, qty }) => dataClient.entities.ContractItem.update(id, { contracted_qty: parseFloat(qty) }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['contract-items', contractId] }); setShowAdjust(null); setAdjustQty(''); }
   });
 

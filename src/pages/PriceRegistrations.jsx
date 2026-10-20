@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ export default function PriceRegistrations() {
   const [editGroup, setEditGroup] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
   const isAdmin = currentUser?.role === 'admin';
 
   const [prForm, setPrForm] = useState({ auction_number: '', sei_number: '', object: '', registration_type: 'srp_cfp', adhesion_organ: '', adhesion_auction_number: '', status: 'em_analise', notes: '' });
@@ -54,40 +54,40 @@ export default function PriceRegistrations() {
 
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ['price-registrations'],
-    queryFn: () => base44.entities.PriceRegistration.list('-created_date'),
+    queryFn: () => dataClient.entities.PriceRegistration.list('-created_date'),
     initialData: [],
   });
 
   const { data: groups = [] } = useQuery({
     queryKey: ['price-registration-groups', selected?.id],
-    queryFn: () => base44.entities.PriceRegistrationGroup.filter({ price_registration_id: selected?.id }),
+    queryFn: () => dataClient.entities.PriceRegistrationGroup.filter({ price_registration_id: selected?.id }),
     enabled: !!selected?.id,
     initialData: [],
   });
 
   const createPR = useMutation({
-    mutationFn: (d) => base44.entities.PriceRegistration.create(d),
+    mutationFn: (d) => dataClient.entities.PriceRegistration.create(d),
     onSuccess: () => { queryClient.invalidateQueries(['price-registrations']); setShowNewPR(false); setPrForm({ auction_number:'',sei_number:'',object:'',status:'em_analise',notes:'' }); }
   });
   const updatePR = useMutation({
-    mutationFn: ({ id, d }) => base44.entities.PriceRegistration.update(id, d),
+    mutationFn: ({ id, d }) => dataClient.entities.PriceRegistration.update(id, d),
     onSuccess: () => { queryClient.invalidateQueries(['price-registrations']); setEditPR(null); }
   });
   const deletePR = useMutation({
-    mutationFn: (id) => base44.entities.PriceRegistration.delete(id),
+    mutationFn: (id) => dataClient.entities.PriceRegistration.delete(id),
     onSuccess: () => { queryClient.invalidateQueries(['price-registrations']); if(selected?.id === editPR?.id) setSelected(null); }
   });
 
   const createGroup = useMutation({
-    mutationFn: (d) => base44.entities.PriceRegistrationGroup.create({ ...d, price_registration_id: selected?.id }),
+    mutationFn: (d) => dataClient.entities.PriceRegistrationGroup.create({ ...d, price_registration_id: selected?.id }),
     onSuccess: () => { queryClient.invalidateQueries(['price-registration-groups', selected?.id]); setShowNewGroup(false); resetGroupForm(); }
   });
   const updateGroup = useMutation({
-    mutationFn: ({ id, d }) => base44.entities.PriceRegistrationGroup.update(id, d),
+    mutationFn: ({ id, d }) => dataClient.entities.PriceRegistrationGroup.update(id, d),
     onSuccess: () => { queryClient.invalidateQueries(['price-registration-groups', selected?.id]); setEditGroup(null); }
   });
   const deleteGroup = useMutation({
-    mutationFn: (id) => base44.entities.PriceRegistrationGroup.delete(id),
+    mutationFn: (id) => dataClient.entities.PriceRegistrationGroup.delete(id),
     onSuccess: () => queryClient.invalidateQueries(['price-registration-groups', selected?.id])
   });
 

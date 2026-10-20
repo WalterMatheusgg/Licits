@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,19 +15,19 @@ export default function AlertsEmail() {
 
   const { data: contracts = [] } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date'),
+    queryFn: () => dataClient.entities.Contract.list('-created_date'),
     initialData: [],
   });
 
   const { data: items = [] } = useQuery({
     queryKey: ['all-items'],
-    queryFn: () => base44.entities.ContractItem.list(),
+    queryFn: () => dataClient.entities.ContractItem.list(),
     initialData: [],
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => dataClient.entities.User.list(),
     initialData: [],
   });
 
@@ -63,7 +63,7 @@ export default function AlertsEmail() {
       if (!user.email) continue;
 
       // Build email body
-      let body = `<h2 style="color:#1e40af">ContratoIA — Alertas de Gestão Contratual</h2>`;
+      let body = `<h2 style="color:#1e40af">Licits — Alertas de Gestão Contratual</h2>`;
       body += `<p>Olá, <strong>${user.full_name || user.email}</strong>.</p>`;
       body += `<p>Abaixo estão os alertas identificados automaticamente pelo sistema:</p>`;
 
@@ -91,11 +91,11 @@ export default function AlertsEmail() {
         body += `<p style="color:#16a34a">✅ Nenhum alerta crítico identificado no momento.</p>`;
       }
 
-      body += `<hr/><p style="font-size:11px;color:#6b7280">E-mail automático gerado pelo sistema ContratoIA em ${new Date().toLocaleString('pt-BR')}</p>`;
+      body += `<hr/><p style="font-size:11px;color:#6b7280">E-mail automático gerado pelo sistema Licits em ${new Date().toLocaleString('pt-BR')}</p>`;
 
-      await base44.integrations.Core.SendEmail({
+      await dataClient.integrations.Core.SendEmail({
         to: user.email,
-        subject: `[ContratoIA] ${expiringContracts.length} contrato(s) vencendo • ${lowItems.length} item(s) crítico(s)`,
+        subject: `[Licits] ${expiringContracts.length} contrato(s) vencendo • ${lowItems.length} item(s) crítico(s)`,
         body,
       });
       count++;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,18 +51,18 @@ export default function Contracts() {
     if (q) setSearch(q);
   }, [searchParams]);
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date'),
+    queryFn: () => dataClient.entities.Contract.list('-created_date'),
     initialData: [],
   });
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Contract.create(data),
+    mutationFn: (data) => dataClient.entities.Contract.create(data),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       setShowForm(false); setShowAI(false);
@@ -71,7 +71,7 @@ export default function Contracts() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Contract.delete(id),
+    mutationFn: (id) => dataClient.entities.Contract.delete(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       logAudit('exclusao', 'Contract', id, 'Contrato excluído');

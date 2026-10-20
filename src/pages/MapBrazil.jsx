@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,12 +34,12 @@ export default function MapBrazil() {
 
   const { data: contracts = [] } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list(),
+    queryFn: () => dataClient.entities.Contract.list(),
     initialData: [],
   });
   const { data: priceGroups = [] } = useQuery({
     queryKey: ['price-groups-map'],
-    queryFn: () => base44.entities.PriceRegistrationGroup.list(),
+    queryFn: () => dataClient.entities.PriceRegistrationGroup.list(),
     initialData: [],
   });
 

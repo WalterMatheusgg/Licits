@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,18 +41,18 @@ export default function FiscalTab({ contractId, contract }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    dataClient.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const { data: records = [] } = useQuery({
     queryKey: ['fiscal-records', contractId],
-    queryFn: () => base44.entities.FiscalRecord.filter({ contract_id: contractId }, '-created_date'),
+    queryFn: () => dataClient.entities.FiscalRecord.filter({ contract_id: contractId }, '-created_date'),
     enabled: !!contractId,
     initialData: [],
   });
 
   const addMutation = useMutation({
-    mutationFn: (data) => base44.entities.FiscalRecord.create({ ...data, contract_id: contractId }),
+    mutationFn: (data) => dataClient.entities.FiscalRecord.create({ ...data, contract_id: contractId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fiscal-records', contractId] });
       setShowAdd(false);
@@ -63,14 +63,14 @@ export default function FiscalTab({ contractId, contract }) {
   const isAdmin = currentUser?.role === 'admin';
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FiscalRecord.delete(id),
+    mutationFn: (id) => dataClient.entities.FiscalRecord.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fiscal-records', contractId] })
   });
 
   const signMutation = useMutation({
     mutationFn: async (record) => {
-      const user = await base44.auth.me();
-      return base44.entities.FiscalRecord.update(record.id, {
+      const user = await dataClient.auth.me();
+      return dataClient.entities.FiscalRecord.update(record.id, {
         signed_by: user.email,
         signed_by_name: user.full_name || user.email,
         signed_at: new Date().toISOString(),
@@ -84,7 +84,7 @@ export default function FiscalTab({ contractId, contract }) {
     const file = e.target.files[0];
     if (!file) return;
     setUploadingFile(true);
-    const result = await base44.integrations.Core.UploadFile({ file });
+    const result = await dataClient.integrations.Core.UploadFile({ file, bucket: 'fiscal-records' });
     setForm(prev => ({ ...prev, file_url: result.file_url, file_name: file.name }));
     setUploadingFile(false);
   };

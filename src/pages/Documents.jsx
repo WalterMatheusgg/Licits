@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,23 +41,23 @@ export default function Documents() {
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    dataClient.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const { data: occurrences = [], isLoading } = useQuery({
     queryKey: ['occurrences-all'],
-    queryFn: () => base44.entities.Occurrence.list('-created_date', 100),
+    queryFn: () => dataClient.entities.Occurrence.list('-created_date', 100),
     initialData: [],
   });
 
   const { data: contracts = [] } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date'),
+    queryFn: () => dataClient.entities.Contract.list('-created_date'),
     initialData: [],
   });
 
   const addMutation = useMutation({
-    mutationFn: (data) => base44.entities.Occurrence.create({
+    mutationFn: (data) => dataClient.entities.Occurrence.create({
       ...data,
       registered_by: currentUser?.email || '',
       registered_by_name: currentUser?.full_name || currentUser?.email || '',
