@@ -5,10 +5,12 @@
 
 **React 18 · Vite 6 · Supabase Auth · PostgreSQL · Storage · RLS**
 
-[![CI](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml)
+[![Frontend](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml)
+[![Supabase SQL](https://github.com/WalterMatheusgg/Licits/actions/workflows/supabase-db-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/supabase-db-ci.yml)
+[![Edge Functions](https://github.com/WalterMatheusgg/Licits/actions/workflows/edge-functions-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/edge-functions-ci.yml)
 ![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Valida%C3%A7%C3%A3o%20integrada%20pendente-F59E0B)
+![Status](https://img.shields.io/badge/Status-Homologa%C3%A7%C3%A3o%20externa%20pendente-F59E0B)
 
 **Gestão contratual com organizações isoladas, rastreabilidade, fiscalização e documentos privados.**
 
@@ -151,18 +153,28 @@ Licits/
 └── package.json
 ~~~
 
-## Segurança e próximos passos
+## Segurança, testes e próximos passos
+
+As verificações SQL em CI criam um Supabase **descartável**, aplicam migrations e simulam contas/organizações diferentes. Validam CRUD, políticas de isolamento, baixa atômica, arquivamento, convites e controles de consumo. **Esses testes não fazem deploy nem exercitam serviços externos.**
+
+**[Manual operacional, backup, restauração e LGPD](docs/PRODUCAO-RECUPERACAO.md)**
+
+O arquivo `scripts/backup-database.sh` gera dump PostgreSQL criptografado via age. Uma rotina de backup efetiva precisa ser configurada no ambiente de destino, incluindo cópia de objetos Supabase Storage e teste de restauração.
 
 - [x] Remover dependência direta do SDK Base44 no frontend.
 - [x] Adicionar gateway de dados Supabase com escopo por organização.
 - [x] Usar RPC transacional para baixa de itens (sem gravações separadas).
 - [x] Criar Edge Functions para integrações que exigem segredos.
 - [x] Configurar verificação de tipos, lint e build na CI.
-- [ ] Aplicar e validar migrations em projeto Supabase real.
-- [ ] Validar autenticação, permissões e isolamento com duas organizações reais.
-- [ ] Fazer testes de criação/edição/exclusão de contratos, documentos, fiscalização, atas e convidados.
-- [ ] Implantar Edge Functions e conferir convites, e-mails e IA com as chaves configuradas.
-- [ ] Revisar políticas de retenção, backup, monitoramento e compatibilidade para produção.
+- [x] Aplicar e validar migrations em banco Supabase **local descartável**.
+- [x] Testar permissões, isolamento e aceite de convites com identidades de teste em PostgreSQL.
+- [x] Cobrir CRUD de contratos, documentos, fiscalização, ocorrências, atas, auditoria e arquivamento com testes SQL.
+- [x] Adicionar limites transacionais por usuário/organização para serviços de terceiros.
+- [x] Documentar retenção, backup criptografado, recuperação e resposta a incidentes.
+- [ ] Validar migrations, autenticação, e CRUD no **projeto Supabase de homologação real**.
+- [ ] Implantar Edge Functions e verificar convites, e-mails e IA com provedores e segredos configurados.
+- [ ] Agendar backups reais de PostgreSQL **e Storage**, comprovar restauração e configurar monitoramento.
+- [ ] Homologar UX ponta a ponta, segurança, custos, LGPD e plano de produção.
 
 **Leia:** [Autenticação](docs/AUTHENTICATION.md) · [Banco](docs/DATABASE.md) · [Segurança](docs/SECURITY.md) · [Migração anterior](docs/MIGRATION_PROGRESS.md)
 
