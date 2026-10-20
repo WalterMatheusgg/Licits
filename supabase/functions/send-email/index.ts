@@ -10,6 +10,8 @@ Deno.serve(async req => {
     const profile=await admin.from('profiles').select('id').eq('email',to).maybeSingle();
     if(!profile.data)throw Error('Destinatário desconhecido.');
     await member(admin,profile.data.id,org);
+    const capacity=await admin.rpc('reserve_integration_capacity',{p_organization_id:org,p_user_id:user.id,p_operation:'send-email'});
+    if(capacity.error)throw capacity.error;
     const resp=await fetch('https://api.resend.com/emails',{method:'POST',
       headers:{Authorization:'Bearer '+env('RESEND_API_KEY'),'Content-Type':'application/json'},
       body:JSON.stringify({from:env('RESEND_FROM_EMAIL'),to:[to],subject,text:content})});

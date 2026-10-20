@@ -7,6 +7,8 @@ Deno.serve(async req=>{
    await member(admin,user.id,org);
    const prompt=String(body.prompt||'').trim();
    if(!prompt||prompt.length>28000)throw Error('Texto ausente ou muito longo.');
+   const capacity=await admin.rpc('reserve_integration_capacity',{p_organization_id:org,p_user_id:user.id,p_operation:'analyze-contract'});
+   if(capacity.error)throw capacity.error;
    const resp=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
     headers:{Authorization:'Bearer '+env('OPENAI_API_KEY'),'Content-Type':'application/json'},
     body:JSON.stringify({model:Deno.env.get('OPENAI_MODEL')||'gpt-4o-mini',max_tokens:1200,

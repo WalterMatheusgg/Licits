@@ -8,6 +8,8 @@ Deno.serve(async req => {
     await member(admin,user.id,org,['organization_admin','gestor']);
     const path=String(body.storage_path||'');
     if(body.storage_bucket!=='contracts'||!path.startsWith(org+'/')||path.includes('..')||path.length>500)throw Error('Documento fora da organização.');
+    const capacity=await admin.rpc('reserve_integration_capacity',{p_organization_id:org,p_user_id:user.id,p_operation:'extract-document'});
+    if(capacity.error)throw capacity.error;
     const result=await admin.storage.from('contracts').download(path);
     if(result.error||!result.data)throw Error('Documento não encontrado.');
     const file=result.data;

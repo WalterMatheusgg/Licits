@@ -7,6 +7,8 @@ Deno.serve(async req => {
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw Error('E-mail inválido.');
     if(!['organization_admin','gestor','fiscal','operacional','visualizador'].includes(role))throw Error('Papel inválido.');
     await member(admin,user.id,org,['organization_admin']);
+    const capacity=await admin.rpc('reserve_integration_capacity',{p_organization_id:org,p_user_id:user.id,p_operation:'invite-member'});
+    if(capacity.error)throw capacity.error;
     const existing=await admin.from('profiles').select('id').eq('email',email).maybeSingle();
     if(existing.error)throw existing.error;
     let id=existing.data?.id;
