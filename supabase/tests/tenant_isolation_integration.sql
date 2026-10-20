@@ -208,23 +208,14 @@ end $;
 -- User B must never access User A's business rows via read or write.
 select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
 do $ begin
- if exists(select 1 from public.price_registrations where
-   id='e1111111-1111-4111-8111-111111111111') then
-   raise exception 'Cross-tenant ARP read permitted'; end if;
- if exists(select 1 from public.admin_requests where
-   id='d7777777-7777-4777-8777-777777777777') then
-   raise exception 'Cross-tenant administrative request leak'; end if;
+ if exists(select 1 from public.price_registrations where id='e1111111-1111-4111-8111-111111111111')
+ then raise exception 'Cross-tenant ARP read permitted'; end if;
+ if exists(select 1 from public.admin_requests where id='d7777777-7777-4777-8777-777777777777')
+ then raise exception 'Cross-tenant admin request leak'; end if;
 end $;
-do $$
-begin
+do $ begin
  update public.price_registration_groups set notes='Unauthorized cross-tenant update'
  where id='e2222222-2222-4222-8222-222222222222';
-do $ begin
  if found then raise exception 'Cross-tenant group update permitted'; end if;
 end $;
-
-rollback;
- if found then raise exception 'Cross-tenant group update permitted'; end if;
-end $$;
-
 rollback;
