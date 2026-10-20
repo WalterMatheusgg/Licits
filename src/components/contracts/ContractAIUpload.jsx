@@ -12,6 +12,7 @@ export default function ContractAIUpload({ onSave, isLoading }) {
   const handleUpload = async () => {
     if (!file) return;
     setExtracting(true);
+    try {
     const { file_url } = await dataClient.integrations.Core.UploadFile({ file });
 
     const result = await dataClient.integrations.Core.ExtractDataFromUploadedFile({
@@ -54,7 +55,11 @@ export default function ContractAIUpload({ onSave, isLoading }) {
         status: 'em_analise'
       });
     }
-    setExtracting(false);
+    } catch (error) {
+      alert('Análise documental indisponível: ' + error.message);
+    } finally {
+      setExtracting(false);
+    }
   };
 
   return (
