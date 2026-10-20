@@ -70,7 +70,7 @@ Os módulos abaixo representam **telas e fluxos presentes no código-fonte**; su
 
 ## 🏗️ Arquitetura
 
-\`\`\`mermaid
+```mermaid
 flowchart TB
     U["Usuário"] --> UI["React + Vite + Tailwind"]
     UI --> AUTH["Supabase Auth"]
@@ -78,63 +78,63 @@ flowchart TB
     ORG --> DB[("Supabase / PostgreSQL + RLS")]
     UI --> LEGACY["Módulos de negócio ainda na Base44"]
     DB --> SCHEMA["Migrations SQL versionadas"]
-\`\`\`
+```
 
-A separação multiempresa é modelada por \`organization_id\`, membros e papéis, com políticas RLS nas migrations. **O isolamento efetivo deve ser testado** com usuários de organizações distintas antes de disponibilizar dados reais.
+A separação multiempresa é modelada por `organization_id`, membros e papéis, com políticas RLS nas migrations. **O isolamento efetivo deve ser testado** com usuários de organizações distintas antes de disponibilizar dados reais.
 
 ## 🚀 Executar localmente
 
 **Pré-requisitos:** Node.js 20 ou superior, npm, projeto Supabase de desenvolvimento e, para fluxos legados ainda não migrados, acesso/configuração correspondente da Base44.
 
-\`\`\`bash
+```bash
 git clone https://github.com/WalterMatheusgg/Licits.git
 cd Licits
 npm ci
 cp .env.example .env.local
 npm run dev
-\`\`\`
+```
 
-No \`.env.local\`, informe as configurações **públicas** do projeto Supabase:
+No `.env.local`, informe as configurações **públicas** do projeto Supabase:
 
-\`\`\`dotenv
+```dotenv
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
-\`\`\`
+```
 
 Abra o endereço exibido pelo Vite no terminal (normalmente **http://localhost:5173**).
 
 > [!WARNING]
-> O frontend **não deve receber** \`SUPABASE_SERVICE_ROLE_KEY\`, \`SUPABASE_SECRET_KEY\`, \`OPENAI_API_KEY\` ou qualquer chave privada. Variáveis prefixadas por \`VITE_\` podem ser incluídas no bundle entregue ao navegador. Mantenha credenciais privadas em serviços backend seguros.
+> O frontend **não deve receber** `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY` ou qualquer chave privada. Variáveis prefixadas por `VITE_` podem ser incluídas no bundle entregue ao navegador. Mantenha credenciais privadas em serviços backend seguros.
 
 **Primeiro acesso:** configure um usuário no Supabase Auth e um vínculo ativo a uma organização. Consulte [Autenticação](docs/AUTHENTICATION.md); não há conta de demonstração pública distribuída no repositório.
 
 ### Banco de dados e migrations
 
-As migrations estão em \`supabase/migrations/\`. Faça a aplicação **primeiro em um projeto de desenvolvimento**, revisando as alterações:
+As migrations estão em `supabase/migrations/`. Faça a aplicação **primeiro em um projeto de desenvolvimento**, revisando as alterações:
 
-\`\`\`bash
+```bash
 npx supabase@latest login
 npx supabase@latest link --project-ref SEU_PROJECT_REF
 npx supabase@latest db push --dry-run --linked
 # Depois de revisar e aprovar:
 npx supabase@latest db push --linked
-\`\`\`
+```
 
 A documentação da migração registra uma etapa de reforço de segurança ainda sujeita a validação. Não execute migrations às cegas em um banco de produção.
 
 ### Verificações disponíveis
 
-\`\`\`bash
+```bash
 npm run typecheck
 npm run lint
 npm run build
-\`\`\`
+```
 
-A [CI do GitHub](.github/workflows/ci.yml) executa \`npm ci\`, checagem de tipos, lint e build. **Build aprovado não equivale à validação dos fluxos integrados com banco e autenticação reais.**
+A [CI do GitHub](.github/workflows/ci.yml) executa `npm ci`, checagem de tipos, lint e build. **Build aprovado não equivale à validação dos fluxos integrados com banco e autenticação reais.**
 
 ## 📁 Estrutura do repositório
 
-\`\`\`text
+```text
 Licits/
 ├── src/
 │   ├── pages/              # Dashboard, contratos, fiscalização, administração
@@ -150,7 +150,7 @@ Licits/
 ├── .github/workflows/      # Validação automatizada
 ├── .env.example            # Configuração pública de exemplo
 └── package.json
-\`\`\`
+```
 
 ## 📚 Documentação
 
