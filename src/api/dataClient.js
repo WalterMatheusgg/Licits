@@ -10,8 +10,8 @@ const definitions = {
   ContractItem: { table: 'contract_items', columns: 'contract_id group_number item_number description unit contracted_qty minimum_qty used_qty unit_price', soft: true },
   ItemWithdrawal: { table: 'item_withdrawals', columns: 'contract_id contract_item_id service_order_number withdrawal_date quantity notes user_id' },
   Document: { table: 'documents', columns: 'contract_id title document_type storage_bucket storage_path original_filename mime_type file_size checksum status version signed_by signed_at notes', soft: true },
-  FiscalRecord: { table: 'fiscal_records', columns: 'contract_id record_type title description document_id comments status fiscal_date signed_by signed_at', soft: true },
-  Occurrence: { table: 'occurrences', columns: 'contract_id title content occurrence_date severity status registered_by resolved_by resolved_at resolution document_id', soft: true },
+  FiscalRecord: { table: 'fiscal_records', columns: 'contract_id record_type title description document_id comments status fiscal_date signed_by signed_at attachment_bucket attachment_path attachment_name', soft: true },
+  Occurrence: { table: 'occurrences', columns: 'contract_id title content occurrence_date severity status registered_by resolved_by resolved_at resolution document_id attachment_bucket attachment_path attachment_name', soft: true },
   PriceRegistration: { table: 'price_registrations', columns: 'auction_number sei_number object registration_type adhesion_organization adhesion_auction_number status notes', soft: true },
   PriceRegistrationGroup: { table: 'price_registration_groups', columns: 'price_registration_id supplier_id arp_number group_number start_date end_date total_value can_extend status notes', soft: true, supplier: true },
   AdminRequest: { table: 'admin_requests', columns: 'requester_id entity_type entity_id entity_label request_type description status admin_response resolved_by resolved_at' },
@@ -93,12 +93,28 @@ function display(name, row) {
     r.os_number = r.service_order_number;
   }
   if (name === 'Occurrence') r.description = r.content;
+  if (name === 'Occurrence' || name === 'FiscalRecord') {
+    r.file_name = r.attachment_name;
+    r.file_url = null;
+  }
   if (name === 'Notification') r.read = !!r.read_at;
   if (name === 'Document') {
     r.file_name = r.original_filename;
     r.file_url = null; // a URL de arquivos privados deve ser assinada no momento do acesso
   }
   return r;
+}
+async function presentWithPrivateFiles(name, rows) {
+  return Promise.all(rows.map(async (row) => {
+    const out = display(name, row);
+    const bucket = name === 'Document' ? row.storage_bucket : row.attachment_bucket;
+    const path = name === 'Document' ? row.storage_path : row.attachment_path;
+    if (bucket && path) {
+      const res = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+      if (!res.error) out.file_url = res.data.signedUrl;
+    }
+    return out;
+  }));
 }
 async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   if (name === 'User') return listUsers();
@@ -120,7 +136,7 @@ async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   const allowedSort = exposedColumns(name).has(sortField) || ['created_at','updated_at','id'].includes(sortField) ? sortField : 'created_at';
   query = query.order(allowedSort, { ascending: !String(order || '').startsWith('-') });
   if (Number.isInteger(limit) && limit > 0) query = query.limit(Math.min(limit, 1000));
-  return unwrap(await query).map(row => display(name, row));
+  return presentWithPrivateFiles(name, unwrap(await query));
 }
 async function prepare(name, input, ctx, action) {
   const data = {...input};
@@ -141,6 +157,20 @@ async function prepare(name, input, ctx, action) {
   if (name === 'Occurrence') {
     data.content = data.content || data.description;
     if (action === 'create') data.registered_by = ctx.user.id;
+    if (data.status === 'resolvida') {
+      data.resolved_by = ctx.user.id;
+      data.resolved_at = new Date().toISOString();
+    }
+  }
+  if (name === 'Occurrence' || name === 'FiscalRecord') {
+    const stored = uploads.get(data.file_url);
+    if (stored) {
+      const expectedBucket = name === 'Occurrence' ? 'occurrences' : 'fiscal-records';
+      if (stored.bucket !== expectedBucket) fail('O arquivo foi enviado para um destino diferente.');
+      data.attachment_bucket = stored.bucket;
+      data.attachment_path = stored.path;
+      data.attachment_name = stored.name;
+    }
   }
   if (name === 'FiscalRecord' && data.signed_by && !String(data.signed_by).match(/^[0-9a-f-]{36}$/i)) data.signed_by = ctx.user.id;
   if (name === 'AdminRequest') {
@@ -190,7 +220,7 @@ async function create(name, data) {
   if (!definitions[name]) return fail('Entidade não suportada: ' + name);
   const row = await prepare(name, data, ctx, 'create');
   const result = unwrap(await supabase.from(definitions[name].table).insert(row).select(selectFor(name)).single());
-  return display(name, result);
+  return (await presentWithPrivateFiles(name, [result]))[0];
 }
 async function update(name, id, data) {
   const ctx = await context();
@@ -203,7 +233,7 @@ async function update(name, id, data) {
   if (!Object.keys(row).length) return fail('Nenhum campo válido para atualizar.');
   const res = unwrap(await supabase.from(definitions[name].table).update(row)
     .eq('organization_id', ctx.org).eq('id', id).select(selectFor(name)).single());
-  return display(name, res);
+  return (await presentWithPrivateFiles(name, [res]))[0];
 }
 async function remove(name, id) {
   const ctx = await context();
@@ -282,7 +312,7 @@ export const dataClient = {
   integrations: { Core: {
     UploadFile: uploadFile,
     SendEmail: ({ to, subject, body }) => invokeFunction('send-email', { to, subject, body }),
-    InvokeLLM: ({ prompt }) => invokeFunction('analyze-contract', { prompt }),
+    InvokeLLM: async ({ prompt, response_json_schema }) => (await invokeFunction('analyze-contract', { prompt, response_json_schema })).result,
     ExtractDataFromUploadedFile: () => fail('Extração automática de documento ainda requer função específica de processamento.')
   }}
 };
