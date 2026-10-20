@@ -1,0 +1,43 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "gestor",
+        "operacional"
+      ],
+      "default": "operacional",
+      "description": "N\u00edvel de acesso: admin (N\u00edvel 1), gestor (N\u00edvel 2), operacional (N\u00edvel 3)"
+    },
+    "sector": {
+      "type": "string",
+      "description": "Setor do usu\u00e1rio"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Telefone"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo",
+        "bloqueado"
+      ],
+      "default": "ativo",
+      "description": "Status do usu\u00e1rio"
+    },
+    "last_access": {
+      "type": "string",
+      "description": "\u00daltimo acesso"
+    }
+  },
+  "required": [
+    "sector",
+    "phone",
+    "last_access"
+  ]
+}

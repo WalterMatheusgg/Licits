@@ -1,0 +1,44 @@
+{
+  "name": "ItemWithdrawal",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "description": "ID do item do contrato"
+    },
+    "contract_id": {
+      "type": "string",
+      "description": "ID do contrato"
+    },
+    "os_number": {
+      "type": "string",
+      "description": "N\u00ba da Ordem de Servi\u00e7o"
+    },
+    "withdrawal_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da baixa"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Quantidade baixada"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "E-mail do usu\u00e1rio"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "item_id",
+    "contract_id",
+    "quantity"
+  ]
+}

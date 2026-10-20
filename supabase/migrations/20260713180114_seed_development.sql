@@ -1,0 +1,8 @@
+-- Intentionally empty.
+-- Do not insert real organizations, users, or credentials in migrations.
+-- Bootstrap the first platform administrator manually in a protected SQL session:
+--
+-- insert into public.platform_admins (user_id, notes)
+-- values ('AUTH_USER_UUID_HERE', 'Initial platform administrator');
+--
+-- Then create the first organization and membership through an administrative flow.

@@ -1,0 +1,67 @@
+{
+  "name": "AdminRequest",
+  "type": "object",
+  "properties": {
+    "requester_email": {
+      "type": "string",
+      "description": "E-mail do solicitante"
+    },
+    "requester_name": {
+      "type": "string",
+      "description": "Nome do solicitante"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Tipo de entidade (Contrato, Fiscaliza\u00e7\u00e3o, etc)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID do registro relacionado"
+    },
+    "entity_label": {
+      "type": "string",
+      "description": "Identifica\u00e7\u00e3o leg\u00edvel (ex: Contrato 001/2025)"
+    },
+    "request_type": {
+      "type": "string",
+      "enum": [
+        "edicao",
+        "exclusao",
+        "ajuste",
+        "outro"
+      ],
+      "description": "Tipo de solicita\u00e7\u00e3o"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada do pedido"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "em_analise",
+        "aprovado",
+        "recusado"
+      ],
+      "default": "pendente",
+      "description": "Status da solicita\u00e7\u00e3o"
+    },
+    "admin_response": {
+      "type": "string",
+      "description": "Resposta do administrador"
+    },
+    "resolved_by": {
+      "type": "string",
+      "description": "Admin que resolveu"
+    },
+    "resolved_at": {
+      "type": "string",
+      "description": "Data/hora da resolu\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "description",
+    "request_type"
+  ]
+}

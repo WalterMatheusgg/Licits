@@ -1,0 +1,169 @@
+{
+  "name": "Contract",
+  "type": "object",
+  "properties": {
+    "contract_number": {
+      "type": "string",
+      "description": "N\u00famero do contrato/ARP"
+    },
+    "sei_number": {
+      "type": "string",
+      "description": "N\u00ba do Processo SEI"
+    },
+    "auction_number": {
+      "type": "string",
+      "description": "N\u00ba do Preg\u00e3o Eletr\u00f4nico"
+    },
+    "object": {
+      "type": "string",
+      "description": "Objeto do contrato"
+    },
+    "modality": {
+      "type": "string",
+      "enum": [
+        "pregao_eletronico",
+        "dispensa",
+        "dispensa_com_disputa",
+        "inexigibilidade",
+        "concorrencia",
+        "tomada_precos",
+        "convite",
+        "registro_precos",
+        "outro"
+      ],
+      "description": "Modalidade de licita\u00e7\u00e3o"
+    },
+    "contract_type": {
+      "type": "string",
+      "description": "Tipo de contrato (texto livre)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "vencido",
+        "encerrado",
+        "suspenso",
+        "cancelado",
+        "em_analise",
+        "em_analise_slic"
+      ],
+      "default": "em_analise",
+      "description": "Status do contrato"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Nome da empresa contratada"
+    },
+    "supplier_cnpj": {
+      "type": "string",
+      "description": "CNPJ da empresa"
+    },
+    "supplier_address": {
+      "type": "string",
+      "description": "Endere\u00e7o completo"
+    },
+    "supplier_city": {
+      "type": "string",
+      "description": "Cidade"
+    },
+    "supplier_state": {
+      "type": "string",
+      "description": "Estado (UF)"
+    },
+    "supplier_cep": {
+      "type": "string",
+      "description": "CEP"
+    },
+    "supplier_phone": {
+      "type": "string",
+      "description": "Telefone"
+    },
+    "supplier_email": {
+      "type": "string",
+      "description": "E-mail"
+    },
+    "supplier_contact": {
+      "type": "string",
+      "description": "Respons\u00e1vel"
+    },
+    "responsible_sector": {
+      "type": "string",
+      "description": "Setor respons\u00e1vel"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vig\u00eancia/encerramento"
+    },
+    "total_value": {
+      "type": "number",
+      "description": "Valor total do contrato"
+    },
+    "used_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor utilizado"
+    },
+    "can_extend": {
+      "type": "string",
+      "enum": [
+        "sim",
+        "nao",
+        "analise_pendente"
+      ],
+      "default": "analise_pendente",
+      "description": "Possibilidade de prorroga\u00e7\u00e3o"
+    },
+    "extensions_done": {
+      "type": "number",
+      "default": 0,
+      "description": "Quantidade de prorroga\u00e7\u00f5es realizadas"
+    },
+    "max_extensions": {
+      "type": "number",
+      "default": 5,
+      "description": "Limite legal de prorroga\u00e7\u00f5es"
+    },
+    "fiscal_status": {
+      "type": "string",
+      "enum": [
+        "adequada",
+        "regular",
+        "baixa"
+      ],
+      "default": "baixa",
+      "description": "Situa\u00e7\u00e3o da fiscaliza\u00e7\u00e3o"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL do arquivo do contrato"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "Resumo executivo gerado pela IA"
+    },
+    "ai_risks": {
+      "type": "string",
+      "description": "Riscos identificados pela IA"
+    },
+    "clauses": {
+      "type": "string",
+      "description": "Cl\u00e1usulas relevantes identificadas"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "contract_number",
+    "object",
+    "supplier_name"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo da notifica\u00e7\u00e3o"
+    },
+    "message": {
+      "type": "string",
+      "description": "Mensagem"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "vencimento",
+        "documento_pendente",
+        "consumo_alto",
+        "risco",
+        "fiscal",
+        "geral"
+      ],
+      "description": "Tipo de notifica\u00e7\u00e3o"
+    },
+    "contract_id": {
+      "type": "string",
+      "description": "ID do contrato relacionado"
+    },
+    "target_user": {
+      "type": "string",
+      "description": "E-mail do destinat\u00e1rio"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Lida"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "baixa",
+        "media",
+        "alta",
+        "critica"
+      ],
+      "default": "media",
+      "description": "Prioridade"
+    }
+  },
+  "required": [
+    "title",
+    "message",
+    "type"
+  ]
+}

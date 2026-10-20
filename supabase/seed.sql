@@ -1,0 +1,3 @@
+-- Intentionally empty.
+-- Create development users with the local Supabase Auth APIs or Studio.
+-- Never commit production credentials or personal data here.
