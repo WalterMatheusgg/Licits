@@ -5,7 +5,7 @@ Deno.serve(async req => {
     const {admin,user}=await authorize(req),body=await req.json();
     const to=String(body.to||'').trim().toLowerCase(), subject=String(body.subject||''),content=String(body.body||'');
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)||!subject.trim()||!content.trim()||subject.length>200||content.length>20000)throw Error('Mensagem inválida.');
-    const org=await firstOrg(admin,user.id);
+    const org=String(body.organization_id||'');
     await member(admin,user.id,org,['organization_admin','gestor']);
     const profile=await admin.from('profiles').select('id').eq('email',to).maybeSingle();
     if(!profile.data)throw Error('Destinatário desconhecido.');
