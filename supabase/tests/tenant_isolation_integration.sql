@@ -183,14 +183,10 @@ do $verify$ begin
 end $verify$;
 
 -- Soft deletion, audit trail and tenant visibility.
-update public.contracts set deleted_at=now(),deleted_by=auth.uid()
- where id='d3333333-3333-4333-8333-333333333333';
-update public.documents set deleted_at=now(),deleted_by=auth.uid()
- where id='d4444444-4444-4444-8444-444444444444';
-update public.fiscal_records set deleted_at=now(),deleted_by=auth.uid()
- where id='d5555555-5555-4555-8555-555555555555';
-update public.occurrences set deleted_at=now(),deleted_by=auth.uid()
- where id='d6666666-6666-4666-8666-666666666666';
+select public.archive_business_record('contracts','d3333333-3333-4333-8333-333333333333','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+select public.archive_business_record('documents','d4444444-4444-4444-8444-444444444444','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+select public.archive_business_record('fiscal_records','d5555555-5555-4555-8555-555555555555','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+select public.archive_business_record('occurrences','d6666666-6666-4666-8666-666666666666','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 
 do $verify$ begin
  if exists(select 1 from public.contracts where id='d3333333-3333-4333-8333-333333333333')
