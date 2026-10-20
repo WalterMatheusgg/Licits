@@ -37,6 +37,23 @@ export const organizationService = {
     );
   },
 
+  async listPendingInvitations(userId) {
+    const { data, error } = await supabase
+      .from('organization_members')
+      .select(MEMBERSHIP_SELECT)
+      .eq('user_id', userId).eq('status','invited')
+      .order('invited_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).filter(m => m.organization?.status === 'active');
+  },
+
+  async acceptInvitation(organizationId) {
+    const { error } = await supabase.rpc('accept_organization_invitation', {
+      p_organization_id: organizationId,
+    });
+    if (error) throw error;
+  },
+
   async isPlatformAdmin() {
     const { data, error } = await supabase.rpc('is_platform_admin');
     if (error) throw error;

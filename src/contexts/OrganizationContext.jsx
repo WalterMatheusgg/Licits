@@ -35,6 +35,7 @@ export const OrganizationProvider = ({ children }) => {
 
   useEffect(() => { queryClient.clear(); }, [authUser?.id, queryClient]);
   const [memberships, setMemberships] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
   const [activeOrganizationId, setActiveOrganizationIdState] = useState(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false);
@@ -43,6 +44,7 @@ export const OrganizationProvider = ({ children }) => {
   const refreshOrganizations = useCallback(async () => {
     if (!isAuthenticated || !authUser?.id) {
       setMemberships([]);
+      setPendingInvitations([]);
       setActiveOrganizationIdState(null);
       setIsPlatformAdmin(false);
       setOrganizationError(null);
@@ -54,12 +56,14 @@ export const OrganizationProvider = ({ children }) => {
     setOrganizationError(null);
 
     try {
-      const [nextMemberships, platformAdmin] = await Promise.all([
+      const [nextMemberships, pending, platformAdmin] = await Promise.all([
         organizationService.listActiveMemberships(authUser.id),
+        organizationService.listPendingInvitations(authUser.id),
         organizationService.isPlatformAdmin(),
       ]);
 
       setMemberships(nextMemberships);
+      setPendingInvitations(pending);
       setIsPlatformAdmin(platformAdmin);
 
       const savedId = window.localStorage.getItem(storageKey(authUser.id));
@@ -78,6 +82,7 @@ export const OrganizationProvider = ({ children }) => {
     } catch (error) {
       console.error('Falha ao carregar organizações:', error);
       setMemberships([]);
+      setPendingInvitations([]);
       setActiveOrganizationIdState(null);
       setOrganizationError('Não foi possível carregar suas organizações.');
       return [];
@@ -88,6 +93,11 @@ export const OrganizationProvider = ({ children }) => {
 
   useEffect(() => {
     refreshOrganizations();
+  }, [refreshOrganizations]);
+
+  const acceptInvitation = useCallback(async (organizationId) => {
+    await organizationService.acceptInvitation(organizationId);
+    return refreshOrganizations();
   }, [refreshOrganizations]);
 
   const selectOrganization = useCallback((organizationId) => {
@@ -127,6 +137,8 @@ export const OrganizationProvider = ({ children }) => {
 
   const value = useMemo(() => ({
     memberships,
+    pendingInvitations,
+    acceptInvitation,
     organizations: memberships.map((item) => item.organization),
     activeMembership,
     activeOrganization,
@@ -142,6 +154,8 @@ export const OrganizationProvider = ({ children }) => {
     hasRole,
   }), [
     memberships,
+    pendingInvitations,
+    acceptInvitation,
     activeMembership,
     activeOrganization,
     activeOrganizationId,

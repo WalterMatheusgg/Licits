@@ -41,6 +41,8 @@ export default function TopBar({ onMenuClick }) {
   const { user, authUser, logout } = useAuth();
   const {
     memberships,
+    pendingInvitations,
+    acceptInvitation,
     activeOrganization,
     activeOrganizationId,
     role,
@@ -138,6 +140,11 @@ export default function TopBar({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-1 lg:gap-2">
+        {pendingInvitations.length>0 && (
+          <Button variant="outline" size="sm" onClick={async()=>{try{await acceptInvitation(pendingInvitations[0].organization_id);}catch(e){window.alert('Convite: '+e.message);}}}>
+            Aceitar convite ({pendingInvitations.length})
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={() => setDarkMode((value) => !value)} className="text-muted-foreground" aria-label="Alternar tema">
           {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </Button>
