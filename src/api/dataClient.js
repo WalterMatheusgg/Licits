@@ -282,11 +282,14 @@ async function update(name, id, data) {
 async function remove(name, id) {
   const ctx = await context();
   if (name === 'User') return updateMember(id, { status: 'inativo' }, ctx);
-  if (!definitions[name]?.soft) return fail('Esta entidade não permite exclusão direta: ' + name);
-  const result = unwrap(await supabase.from(definitions[name].table).update({
-    deleted_at: new Date().toISOString(), deleted_by: ctx.user.id
-  }).eq('organization_id', ctx.org).eq('id', id).select('id').single());
-  return result;
+  if (!definitions[name]?.soft) return fail('Esta entidade não permite arquivamento: ' + name);
+  const ok = unwrap(await supabase.rpc('archive_business_record', {
+    p_entity: definitions[name].table,
+    p_id: id,
+    p_organization_id: ctx.org,
+  }));
+  if (!ok) return fail('Não foi possível arquivar o registro.');
+  return { id, archived: true };
 }
 async function listUsers() {
   const ctx = await context();
