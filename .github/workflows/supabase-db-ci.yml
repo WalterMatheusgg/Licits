@@ -34,9 +34,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
           DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select case when count(*)>=19 then 1 else 1/0 end from pg_tables where schemaname='public' and rowsecurity=true;"
-          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select case when count(*)=1 then 1 else 1/0 end from information_schema.columns where table_schema='public' and table_name='contract_items' and column_name='price_registration_group_id';"
-          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select case when count(*)=1 then 1 else 1/0 end from information_schema.tables where table_schema='public' and table_name='notification_reads';"
+          RLS_COUNT=$(psql "$DB" -v ON_ERROR_STOP=1 -Atc "select count(*) from pg_tables where schemaname='public' and rowsecurity=true;")
+          ARP_COUNT=$(psql "$DB" -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.columns where table_schema='public' and table_name='contract_items' and column_name='price_registration_group_id';")
+          READ_COUNT=$(psql "$DB" -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.tables where table_schema='public' and table_name='notification_reads';")
+          echo "RLS tables: $RLS_COUNT | ARP column: $ARP_COUNT | Read receipts: $READ_COUNT"
+          test "$RLS_COUNT" -ge 19
+          test "$ARP_COUNT" -eq 1
+          test "$READ_COUNT" -eq 1
       - name: Show state on failure
         if: failure()
         run: npx --yes supabase@latest status || true
