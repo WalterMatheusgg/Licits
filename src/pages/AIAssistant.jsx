@@ -48,6 +48,7 @@ export default function AIAssistant() {
       prorrogacoes: c.extensions_done,
     }));
 
+    try {
     const response = await dataClient.integrations.Core.InvokeLLM({
       prompt: `Você é o assistente IA do sistema Licits - gestão inteligente de contratos. 
 Responda de forma clara, objetiva e em português brasileiro.
@@ -61,8 +62,12 @@ Data atual: ${new Date().toISOString().split('T')[0]}
 Pergunta do usuário: ${userMsg}`,
     });
 
-    setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    setLoading(false);
+    setMessages(prev => [...prev, { role: 'assistant', content: typeof response === 'string' ? response : JSON.stringify(response) }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Serviço de IA indisponível: ' + error.message }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const suggestions = [
