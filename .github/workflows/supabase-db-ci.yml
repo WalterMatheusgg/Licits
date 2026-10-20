@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/**'
+      - 'supabase/tests/**'
       - 'supabase/config.toml'
       - '.github/workflows/supabase-db-ci.yml'
   workflow_dispatch:
@@ -41,6 +42,11 @@ jobs:
           test "$RLS_COUNT" -ge 19
           test "$ARP_COUNT" -eq 1
           test "$READ_COUNT" -eq 1
+      - name: Test real tenant isolation and atomic inventory in PostgreSQL
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f supabase/tests/tenant_isolation_integration.sql
       - name: Show state on failure
         if: failure()
         run: npx --yes supabase@latest status || true
