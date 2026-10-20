@@ -111,4 +111,114 @@ begin
  if not rejected then raise exception 'Overconsumption not rejected'; end if;
 end;
 $$;
+
+-- Functional CRUD: create, update, read and soft-delete business records.
+-- All changes remain isolated in this transaction.
+insert into public.contracts(id,organization_id,supplier_id,contract_number,object,total_value)
+values ('d3333333-3333-4333-8333-333333333333',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'c1111111-1111-4111-8111-111111111111','CI-CRUD-001','Initial contract',500);
+update public.contracts set object='Updated contract', status='ativo'
+where id='d3333333-3333-4333-8333-333333333333';
+do $ begin
+ if not exists (select 1 from public.contracts where
+  id='d3333333-3333-4333-8333-333333333333'
+  and object='Updated contract' and status='ativo')
+ then raise exception 'Contract create/update/read failed'; end if;
+end $;
+
+insert into public.documents(id,organization_id,contract_id,title,document_type,storage_bucket,storage_path)
+values ('d4444444-4444-4444-8444-444444444444',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'd3333333-3333-4333-8333-333333333333',
+  'Document original','contrato','generated-documents',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/ci-test.pdf');
+update public.documents set title='Document updated'
+ where id='d4444444-4444-4444-8444-444444444444';
+
+insert into public.fiscal_records(id,organization_id,contract_id,record_type,title,description,document_id)
+values('d5555555-5555-4555-8555-555555555555',
+ 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ 'd3333333-3333-4333-8333-333333333333','vistoria',
+ 'Fiscal record','Inspection started','d4444444-4444-4444-8444-444444444444');
+update public.fiscal_records set status='concluido',description='Inspection completed'
+ where id='d5555555-5555-4555-8555-555555555555';
+
+insert into public.occurrences(id,organization_id,contract_id,title,content,severity)
+values('d6666666-6666-4666-8666-666666666666',
+ 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ 'd3333333-3333-4333-8333-333333333333',
+ 'Late delivery','Delivery was delayed','alta');
+update public.occurrences
+ set status='resolvida',resolved_by=auth.uid(),resolved_at=now(),resolution='Delivered'
+ where id='d6666666-6666-4666-8666-666666666666';
+
+update public.price_registrations set object='Updated ARP'
+ where id='e1111111-1111-4111-8111-111111111111';
+update public.price_registration_groups set notes='Supplier verified'
+ where id='e2222222-2222-4222-8222-222222222222';
+
+insert into public.admin_requests(id,organization_id,request_type,description,entity_type,entity_id)
+values('d7777777-7777-4777-8777-777777777777',
+ 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ 'ajuste','Correct contract object','contrato','d3333333-3333-4333-8333-333333333333');
+update public.admin_requests
+ set status='aprovado', resolved_by=auth.uid(),resolved_at=now(),
+ admin_response='Verified'
+ where id='d7777777-7777-4777-8777-777777777777';
+
+do $ begin
+ if not exists (select 1 from public.documents where id='d4444444-4444-4444-8444-444444444444' and title='Document updated')
+ then raise exception 'Document CRUD failed'; end if;
+ if not exists (select 1 from public.fiscal_records where id='d5555555-5555-4555-8555-555555555555' and status='concluido')
+ then raise exception 'Fiscal CRUD failed'; end if;
+ if not exists (select 1 from public.occurrences where id='d6666666-6666-4666-8666-666666666666' and status='resolvida')
+ then raise exception 'Occurrence CRUD failed'; end if;
+ if not exists (select 1 from public.price_registrations where id='e1111111-1111-4111-8111-111111111111' and object='Updated ARP')
+ then raise exception 'Price registration CRUD failed'; end if;
+ if not exists (select 1 from public.price_registration_groups where id='e2222222-2222-4222-8222-222222222222' and notes='Supplier verified')
+ then raise exception 'ARP group update failed'; end if;
+ if not exists (select 1 from public.admin_requests where id='d7777777-7777-4777-8777-777777777777' and status='aprovado')
+ then raise exception 'Administrative request workflow failed'; end if;
+end $;
+
+-- Soft deletion, audit trail and tenant visibility.
+update public.contracts set deleted_at=now(),deleted_by=auth.uid()
+ where id='d3333333-3333-4333-8333-333333333333';
+update public.documents set deleted_at=now(),deleted_by=auth.uid()
+ where id='d4444444-4444-4444-8444-444444444444';
+update public.fiscal_records set deleted_at=now(),deleted_by=auth.uid()
+ where id='d5555555-5555-4555-8555-555555555555';
+update public.occurrences set deleted_at=now(),deleted_by=auth.uid()
+ where id='d6666666-6666-4666-8666-666666666666';
+
+do $ begin
+ if exists(select 1 from public.contracts where id='d3333333-3333-4333-8333-333333333333')
+ then raise exception 'Contract soft delete still visible under RLS'; end if;
+ if exists(select 1 from public.documents where id='d4444444-4444-4444-8444-444444444444')
+ then raise exception 'Document soft delete still visible under RLS'; end if;
+ if exists(select 1 from public.fiscal_records where id='d5555555-5555-4555-8555-555555555555')
+ then raise exception 'Fiscal soft delete still visible under RLS'; end if;
+ if exists(select 1 from public.occurrences where id='d6666666-6666-4666-8666-666666666666')
+ then raise exception 'Occurrence soft delete still visible under RLS'; end if;
+ if not exists (select 1 from public.audit_logs where entity_id='d3333333-3333-4333-8333-333333333333' and action='update')
+ then raise exception 'Audit event missing for contract'; end if;
+end $;
+
+-- User B must never access User A's business rows via read or write.
+select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
+do $ begin
+ if exists(select 1 from public.price_registrations where
+   id='e1111111-1111-4111-8111-111111111111') then
+   raise exception 'Cross-tenant ARP read permitted'; end if;
+ if exists(select 1 from public.admin_requests where
+   id='d7777777-7777-4777-8777-777777777777') then
+   raise exception 'Cross-tenant administrative request leak'; end if;
+end $;
+update public.price_registration_groups set notes='Unauthorized cross-tenant update'
+ where id='e2222222-2222-4222-8222-222222222222';
+do $ begin
+ if found then raise exception 'Cross-tenant group update permitted'; end if;
+end $;
+
 rollback;
