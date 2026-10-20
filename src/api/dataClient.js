@@ -28,7 +28,7 @@ const safeText = (v) => v === '' || v === undefined ? null : v;
 const sanitizeCnpj = (s) => String(s || '').replace(/\D/g, '');
 const roleForUI = (role) => role === 'organization_admin' ? 'admin' : role === 'gestor' || role === 'fiscal' ? 'gestor' : 'operacional';
 const roleForDB = (role) => role === 'admin' ? 'organization_admin' : role === 'gestor' ? 'gestor' : role === 'operacional' ? 'operacional' : role;
-const statusForUI = (s) => s === 'active' ? 'ativo' : s === 'suspended' ? 'bloqueado' : 'inativo';
+const statusForUI = (s) => s === 'active' ? 'ativo' : s === 'invited' ? 'convidado' : s === 'suspended' ? 'bloqueado' : 'inativo';
 const statusForDB = (s) => s === 'ativo' ? 'active' : s === 'bloqueado' ? 'suspended' : s === 'inativo' ? 'revoked' : s;
 
 async function context() {

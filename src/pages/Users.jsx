@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 
 const roleLabels = { admin: 'Administrador', gestor: 'Gestor/Fiscal', operacional: 'Operacional' };
 const roleBadge = { admin: 'bg-primary/10 text-primary', gestor: 'bg-amber-500/10 text-amber-600', operacional: 'bg-muted text-muted-foreground' };
-const statusBadge = { ativo: 'bg-emerald-500/10 text-emerald-600', inativo: 'bg-gray-500/10 text-gray-600', bloqueado: 'bg-red-500/10 text-red-600' };
+const statusBadge = { convidado: 'bg-blue-500/10 text-blue-600', ativo: 'bg-emerald-500/10 text-emerald-600', inativo: 'bg-gray-500/10 text-gray-600', bloqueado: 'bg-red-500/10 text-red-600' };
 
 export default function Users() {
   const [search, setSearch] = useState('');
@@ -46,7 +46,10 @@ export default function Users() {
     setInviting(true);
     const role = inviteRole;
     try {
-      await dataClient.users.inviteUser(inviteEmail, role);
+      const result = await dataClient.users.inviteUser(inviteEmail, role);
+      window.alert(result?.email_sent
+        ? 'Convite registrado; solicitação de e-mail enviada ao Supabase. O acesso depende do aceite.'
+        : 'Convite pendente. Avise a pessoa já cadastrada para entrar no Licits e clicar em Aceitar convite.');
       setShowInvite(false);
       setInviteEmail('');
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -131,7 +134,7 @@ export default function Users() {
                     <Shield className="w-3 h-3 mr-1" />{roleLabels[u.role] || 'Operacional'}
                   </Badge>
                   <Badge variant="outline" className={`${statusBadge[u.status] || statusBadge.ativo} text-[10px]`}>
-                    {u.status === 'bloqueado' ? '🔒 Bloqueado' : u.status === 'inativo' ? 'Inativo' : 'Ativo'}
+                    {u.status === 'bloqueado' ? '🔒 Bloqueado' : u.status === 'convidado' ? 'Convite pendente' : u.status === 'inativo' ? 'Inativo' : 'Ativo'}
                   </Badge>
 
                   {isAdmin && u.id !== currentUser?.id && (
