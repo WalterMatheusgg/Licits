@@ -215,10 +215,16 @@ do $ begin
    id='d7777777-7777-4777-8777-777777777777') then
    raise exception 'Cross-tenant administrative request leak'; end if;
 end $;
-update public.price_registration_groups set notes='Unauthorized cross-tenant update'
+do $$
+begin
+ update public.price_registration_groups set notes='Unauthorized cross-tenant update'
  where id='e2222222-2222-4222-8222-222222222222';
 do $ begin
  if found then raise exception 'Cross-tenant group update permitted'; end if;
 end $;
+
+rollback;
+ if found then raise exception 'Cross-tenant group update permitted'; end if;
+end $$;
 
 rollback;
