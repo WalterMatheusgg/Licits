@@ -3,7 +3,7 @@ Deno.serve(async req=>{
  const preflight=options(req);if(preflight)return preflight;
  try{
    const {admin,user}=await authorize(req), body=await req.json();
-   const org=await firstOrg(admin,user.id);
+   const org=String(body.organization_id||'');
    await member(admin,user.id,org);
    const prompt=String(body.prompt||'').trim();
    if(!prompt||prompt.length>28000)throw Error('Texto ausente ou muito longo.');
