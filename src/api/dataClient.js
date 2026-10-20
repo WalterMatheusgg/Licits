@@ -7,11 +7,11 @@ import { supabase } from '@/lib/supabaseClient';
  */
 const definitions = {
   Contract: { table: 'contracts', columns: 'supplier_id contract_number sei_number auction_number object modality contract_type status responsible_sector start_date end_date total_value used_value can_extend extensions_done max_extensions fiscal_status source_document_id ai_summary ai_risks clauses notes', soft: true, supplier: true },
-  ContractItem: { table: 'contract_items', columns: 'contract_id group_number item_number description unit contracted_qty minimum_qty used_qty unit_price', soft: true },
-  ItemWithdrawal: { table: 'item_withdrawals', columns: 'contract_id contract_item_id service_order_number withdrawal_date quantity notes user_id' },
+  ContractItem: { table: 'contract_items', columns: 'contract_id price_registration_group_id group_number item_number description unit contracted_qty minimum_qty used_qty unit_price', soft: true },
+  ItemWithdrawal: { table: 'item_withdrawals', columns: 'contract_id price_registration_group_id contract_item_id service_order_number withdrawal_date quantity notes user_id' },
   Document: { table: 'documents', columns: 'contract_id title document_type storage_bucket storage_path original_filename mime_type file_size checksum status version signed_by signed_at notes', soft: true },
-  FiscalRecord: { table: 'fiscal_records', columns: 'contract_id record_type title description document_id comments status fiscal_date signed_by signed_at attachment_bucket attachment_path attachment_name', soft: true },
-  Occurrence: { table: 'occurrences', columns: 'contract_id title content occurrence_date severity status registered_by resolved_by resolved_at resolution document_id attachment_bucket attachment_path attachment_name', soft: true },
+  FiscalRecord: { table: 'fiscal_records', columns: 'contract_id price_registration_group_id record_type title description document_id comments status fiscal_date signed_by signed_at attachment_bucket attachment_path attachment_name', soft: true },
+  Occurrence: { table: 'occurrences', columns: 'contract_id price_registration_group_id title content occurrence_date severity status registered_by resolved_by resolved_at resolution document_id attachment_bucket attachment_path attachment_name', soft: true },
   PriceRegistration: { table: 'price_registrations', columns: 'auction_number sei_number object registration_type adhesion_organization adhesion_auction_number status notes', soft: true },
   PriceRegistrationGroup: { table: 'price_registration_groups', columns: 'price_registration_id supplier_id arp_number group_number start_date end_date total_value can_extend status notes', soft: true, supplier: true },
   AdminRequest: { table: 'admin_requests', columns: 'requester_id entity_type entity_id entity_label request_type description status admin_response resolved_by resolved_at' },
@@ -88,8 +88,10 @@ function display(name, row) {
     });
   }
   if (name === 'ContractItem') r.min_qty = r.minimum_qty;
+  if (dualParentEntities.has(name)) r.contract_id = r.contract_id || r.price_registration_group_id;
   if (name === 'ItemWithdrawal') {
     r.item_id = r.contract_item_id;
+    r.contract_id = r.contract_id || r.price_registration_group_id;
     r.os_number = r.service_order_number;
   }
   if (name === 'Occurrence') r.description = r.content;
@@ -116,6 +118,20 @@ async function presentWithPrivateFiles(name, rows) {
     return out;
   }));
 }
+
+const dualParentEntities = new Set(['ContractItem','FiscalRecord','Occurrence','ItemWithdrawal']);
+async function resolveContractOrArpParent(input, ctx) {
+  if (!input.contract_id) return input;
+  const id = input.contract_id;
+  const contract = unwrap(await supabase.from('contracts').select('id')
+    .eq('id',id).eq('organization_id',ctx.org).is('deleted_at',null).maybeSingle());
+  if (contract) return input;
+  const group = unwrap(await supabase.from('price_registration_groups').select('id')
+    .eq('id',id).eq('organization_id',ctx.org).is('deleted_at',null).maybeSingle());
+  if (group) return {...input,contract_id:null,price_registration_group_id:id};
+  return fail('Contrato ou grupo de registro de preços não encontrado nesta organização.');
+}
+
 async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   if (name === 'User') return listUsers();
   if (!definitions[name]) return fail('Entidade desconhecida: ' + name);
@@ -123,7 +139,8 @@ async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   let query = supabase.from(definitions[name].table).select(selectFor(name)).eq('organization_id', ctx.org);
   if (definitions[name].soft) query = query.is('deleted_at', null);
   if (name === 'Notification') query = query.or('target_user_id.is.null,target_user_id.eq.' + ctx.user.id);
-  for (const [field, value] of Object.entries(filter || {})) {
+  const realFilter = dualParentEntities.has(name) ? await resolveContractOrArpParent(filter || {}, ctx) : filter || {};
+  for (const [field, value] of Object.entries(realFilter)) {
     if (field === 'read' && name === 'Notification') {
       query = value ? query.not('read_at', 'is', null) : query.is('read_at', null);
       continue;
@@ -139,7 +156,7 @@ async function scopedQuery(name, filter = {}, order = '-created_date', limit) {
   return presentWithPrivateFiles(name, unwrap(await query));
 }
 async function prepare(name, input, ctx, action) {
-  const data = {...input};
+  const data = dualParentEntities.has(name) ? await resolveContractOrArpParent({...input}, ctx) : {...input};
   const row = {};
   if (name === 'Contract' || name === 'PriceRegistrationGroup') {
     if (action === 'create' || data.supplier_name || data.supplier_id) row.supplier_id = await supplierIdFor(data, ctx);
