@@ -77,7 +77,7 @@ export default function OccurrenceTab({ contractId, contract }) {
     const file = e.target.files[0];
     if (!file) return;
     setUploadingFile(true);
-    const result = await dataClient.integrations.Core.UploadFile({ file });
+    const result = await dataClient.integrations.Core.UploadFile({ file, bucket: 'occurrences' });
     setForm(prev => ({ ...prev, file_url: result.file_url, file_name: file.name }));
     setUploadingFile(false);
   };
