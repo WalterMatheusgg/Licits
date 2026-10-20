@@ -1,184 +1,176 @@
 <div align="center">
 
 # 📑 LICITS
-
 ### Gestão de contratos, fiscalização e registros de preços
 
-**Aplicação web corporativa construída com React, Vite e Tailwind CSS.**  
-Organização de contratos, documentos, ocorrências, registros de preços e rotinas de fiscalização.
+**React 18 · Vite 6 · Supabase Auth · PostgreSQL · Storage · RLS**
 
-[![CI • Licits](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml)
-![React](https://img.shields.io/badge/React-18-149ECA?style=flat-square&logo=react&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20PostgreSQL-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Migra%C3%A7%C3%A3o%20em%20andamento-F59E0B?style=flat-square)
+[![CI](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml)
+![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Valida%C3%A7%C3%A3o%20integrada%20pendente-F59E0B)
 
-[**Funcionalidades**](#-módulos-e-recursos) · [**Tecnologias**](#-tecnologias) · [**Executar**](#-executar-localmente) · [**Arquitetura**](#-arquitetura) · [**Documentação**](#-documentação) · [**Próximos passos**](#-próximos-passos)
+**Gestão contratual com organizações isoladas, rastreabilidade, fiscalização e documentos privados.**
 
 </div>
 
 ---
 
-## 🎯 Sobre o projeto
+## Sobre o projeto
 
-O **Licits** é uma aplicação de gestão contratual com uma interface orientada às rotinas administrativas de acompanhamento de contratos, fiscalização, documentos, ocorrências e atas de registro de preços.
+O **Licits** é uma aplicação web para acompanhamento de contratos, fornecedores, atas de registro de preços, fiscalização, ocorrências, documentos e permissões de uma organização.
 
-O frontend utiliza **React 18**, **Vite 6**, **Tailwind CSS**, componentes **Radix UI**, **TanStack Query**, formulários e gráficos. O código está organizado por páginas, componentes reutilizáveis, serviços e contextos de autenticação e organização.
+A migração do **código-fonte do frontend** para Supabase foi realizada. A interface deixou de importar o SDK Base44; as operações de dados passaram por um gateway Supabase com filtragem por organização e políticas **Row Level Security** no PostgreSQL.
 
 > [!IMPORTANT]
-> **Projeto em evolução — não homologado para produção.** O Licits está em processo de migração da **Base44 para Supabase**. A fundação de autenticação e contexto multi-organização foi implementada, porém vários módulos de negócio ainda chamam a API Base44. **Não considere todos os fluxos operacionais migrados ou validados.** Consulte o [progresso da migração](docs/MIGRATION_PROGRESS.md).
+> **A compilação e as verificações estáticas não substituem testes com um Supabase real.** Para executar todas as funções é necessário configurar o projeto Supabase, aplicar as migrations, criar a primeira organização e fazer o deploy das Edge Functions. E-mail e IA também exigem serviços terceiros, credenciais privadas e validação específica. **Não está homologado para produção.**
 
-## 🧩 Módulos e recursos
+## Funcionalidades implementadas no código
 
-Os módulos abaixo representam **telas e fluxos presentes no código-fonte**; sua integração pode depender da Base44 enquanto a migração está incompleta.
-
-| Área | O que existe no projeto |
+| Módulo | Implementação |
 |:--|:--|
-| 📊 **Dashboard** | Indicadores, gráficos de contratos, consumo e acompanhamento |
-| 📑 **Contratos** | Listagem, filtros, formulários, detalhes e análises |
-| 🗂️ **Documentos** | Interfaces para arquivos e documentos contratuais |
-| 🛡️ **Fiscalização** | Acompanhamento fiscal e registros de ocorrências |
-| 🧾 **Registros de preços** | Telas de atas, grupos, itens e acompanhamento |
-| 👥 **Administração** | Interfaces de usuários, permissões e solicitações administrativas |
-| 🔔 **Notificações** | Indicadores no TopBar e páginas de acompanhamento |
-| 🤖 **Assistente de IA** | Interfaces em desenvolvimento; integração de processamento ainda pendente |
-| 🔐 **Identidade e organização** | Login e recuperação de senha pelo Supabase Auth; organização ativa e controle de acesso no frontend |
+| 🔐 **Login e conta** | Supabase Auth, recuperação de senha e proteção de rotas |
+| 🏢 **Organizações** | Contexto ativo, vínculo de usuários, papéis e políticas RLS |
+| 📑 **Contratos e fornecedores** | Cadastro, consulta, edição, filtros, exclusão lógica e fornecedor relacional |
+| 📦 **Itens de contrato** | Quantidades, acompanhamento de consumo e baixa atômica em função SQL |
+| 🧾 **Registros de preços** | Atas, grupos de fornecedores e acompanhamento de vigência |
+| 🛡️ **Fiscalização e ocorrências** | Registros vinculados aos contratos, histórico e anexos privados |
+| 📁 **Documentos** | Upload para bucket privado, metadados SQL e links temporários assinados |
+| 📊 **Dashboard e relatórios** | Telas, indicadores, filtros e gráficos alimentados pelas consultas Supabase |
+| 👥 **Administração** | Membros, papéis, solicitações e trilha automática de auditoria |
+| 🔔 **Notificações** | Leitura de avisos por organização; marcação de leitura de avisos individuais |
+| ✉️ **E-mails** | Edge Function autenticada usando Resend, após configuração |
+| ✨ **IA documental** | Edge Functions autenticadas para perguntas e extração PDF/JPG/PNG, após configuração e revisão humana |
 
-### Estado das integrações
+## Arquitetura
 
-| Frente | Estado documentado |
-|:--|:--|
-| React, rotas, layout e componentes | ✅ Código-fonte disponível |
-| Autenticação Supabase e seleção de organização | 🟡 Implementadas; validação remota ainda necessária |
-| PostgreSQL, migrations e políticas RLS | 🟡 Definidos no repositório; aplicação e isolamento precisam ser verificados no ambiente-alvo |
-| CRUD de contratos, documentos e fiscalizações no Supabase | 🚧 Migração pendente — chamadas Base44 ainda presentes |
-| IA para extração/análise contratual | 🚧 Fluxo e integração backend pendentes |
-| Envio de e-mails e migração integral de notificações | 🚧 Pendente |
-| Build / lint / typecheck | ✅ Pipeline de integração contínua configurada |
+~~~mermaid
+flowchart TD
+    UI["React 18 · Vite · Tailwind CSS"] --> AUTH["Supabase Auth"]
+    UI --> GATE["Gateway de dados por organização"]
+    GATE --> DB[("PostgreSQL + Row Level Security")]
+    GATE --> STORAGE["Storage privado · URLs assinadas"]
+    GATE --> RPC["RPC transacional de baixa de itens"]
+    UI --> EDGE["Edge Functions com autorização"]
+    EDGE --> EMAIL["Resend · opcional"]
+    EDGE --> IA["OpenAI · opcional"]
+~~~
 
-## 🧰 Tecnologias
+- **Frontend:** React Router, TanStack Query, React Hook Form, Tailwind, Radix UI, Recharts.
+- **Dados e segurança:** Supabase, PostgreSQL, migrations SQL, autorização no banco, controle de acesso por organização e auditoria em triggers.
+- **Funções de servidor:** convite de membros, e-mail, análise assistida e extração documental. Credenciais privadas permanecem no ambiente Edge.
 
-| Camada | Tecnologias |
-|:--|:--|
-| **Interface** | React 18, JavaScript/JSX, Vite 6, Tailwind CSS |
-| **Componentes** | Radix UI, ícones Lucide, Framer Motion |
-| **Dados e formulários** | TanStack Query, React Hook Form, Zod |
-| **Gráficos** | Recharts |
-| **Autenticação e banco em migração** | Supabase Auth, PostgreSQL, Row Level Security, Storage |
-| **Legado ainda presente** | SDK e plugin da Base44 |
-| **Qualidade** | ESLint, TypeScript (checagem via JSConfig), GitHub Actions |
+## Executar localmente
 
-## 🏗️ Arquitetura
+### 1. Instalação
 
-```mermaid
-flowchart TB
-    U["Usuário"] --> UI["React + Vite + Tailwind"]
-    UI --> AUTH["Supabase Auth"]
-    UI --> ORG["Contexto de organização / permissões"]
-    ORG --> DB[("Supabase / PostgreSQL + RLS")]
-    UI --> LEGACY["Módulos de negócio ainda na Base44"]
-    DB --> SCHEMA["Migrations SQL versionadas"]
-```
+Requisitos: Node.js 20 ou superior, npm, conta/projeto Supabase para desenvolvimento e Supabase CLI para banco e funções.
 
-A separação multiempresa é modelada por `organization_id`, membros e papéis, com políticas RLS nas migrations. **O isolamento efetivo deve ser testado** com usuários de organizações distintas antes de disponibilizar dados reais.
-
-## 🚀 Executar localmente
-
-**Pré-requisitos:** Node.js 20 ou superior, npm, projeto Supabase de desenvolvimento e, para fluxos legados ainda não migrados, acesso/configuração correspondente da Base44.
-
-```bash
+~~~bash
 git clone https://github.com/WalterMatheusgg/Licits.git
 cd Licits
 npm ci
 cp .env.example .env.local
-npm run dev
-```
+~~~
 
-No `.env.local`, informe as configurações **públicas** do projeto Supabase:
+Preencha **apenas configurações públicas** no arquivo .env.local:
 
-```dotenv
+~~~dotenv
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
-```
+~~~
 
-Abra o endereço exibido pelo Vite no terminal (normalmente **http://localhost:5173**).
+> [!CAUTION]
+> Nunca adicione a arquivos **VITE_** credenciais administrativas, service role, senha de banco, chaves do Resend ou OpenAI. Variáveis VITE_ são acessíveis ao navegador.
 
-> [!WARNING]
-> O frontend **não deve receber** `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY` ou qualquer chave privada. Variáveis prefixadas por `VITE_` podem ser incluídas no bundle entregue ao navegador. Mantenha credenciais privadas em serviços backend seguros.
+### 2. Banco de dados
 
-**Primeiro acesso:** configure um usuário no Supabase Auth e um vínculo ativo a uma organização. Consulte [Autenticação](docs/AUTHENTICATION.md); não há conta de demonstração pública distribuída no repositório.
+Use um projeto Supabase de **desenvolvimento** e confira todas as migrations antes de executar:
 
-### Banco de dados e migrations
-
-As migrations estão em `supabase/migrations/`. Faça a aplicação **primeiro em um projeto de desenvolvimento**, revisando as alterações:
-
-```bash
+~~~bash
 npx supabase@latest login
 npx supabase@latest link --project-ref SEU_PROJECT_REF
 npx supabase@latest db push --dry-run --linked
-# Depois de revisar e aprovar:
 npx supabase@latest db push --linked
-```
+~~~
 
-A documentação da migração registra uma etapa de reforço de segurança ainda sujeita a validação. Não execute migrations às cegas em um banco de produção.
+As migrations estão em **supabase/migrations**. Incluem constraints, RLS, buckets privados, auditoria, controle de consumo e metadados dos anexos.
 
-### Verificações disponíveis
+**Primeiro usuário:** crie a conta no painel Supabase e associe-a a uma organização com papel organization_admin em uma sessão SQL administrativa. Siga exatamente [a documentação de autenticação](docs/AUTHENTICATION.md).
 
-```bash
+### 3. Funções de servidor
+
+~~~bash
+npx supabase@latest functions deploy invite-member
+npx supabase@latest functions deploy send-email
+npx supabase@latest functions deploy analyze-contract
+npx supabase@latest functions deploy extract-document
+~~~
+
+Configure segredos **somente no Supabase**: RESEND_API_KEY, RESEND_FROM_EMAIL, OPENAI_API_KEY e, opcionalmente, OPENAI_MODEL e OPENAI_DOCUMENT_MODEL. É necessário um endereço/domínio remetente verificado para enviar e-mails.
+
+- [Documentação das Edge Functions](docs/EDGE-FUNCTIONS.md)
+- [Extração de documentos com IA](docs/DOCUMENT-AI.md)
+- A análise com IA **envia o conteúdo à OpenAI somente após ação do usuário**; faça revisão de privacidade e de autorização antes de usar documentos reais.
+
+### 4. Iniciar
+
+~~~bash
+npm run dev
+~~~
+
+Acesse o endereço do Vite exibido no terminal, geralmente **http://localhost:5173**.
+
+## Verificar qualidade
+
+~~~bash
 npm run typecheck
 npm run lint
 npm run build
-```
+~~~
 
-A [CI do GitHub](.github/workflows/ci.yml) executa `npm ci`, checagem de tipos, lint e build. **Build aprovado não equivale à validação dos fluxos integrados com banco e autenticação reais.**
+A [CI do GitHub](.github/workflows/ci.yml) executa instalação reprodutível, lint, verificação de tipos e build. **Ela não confirma a conexão com um Supabase externo, nem testes funcionais de ponta a ponta.**
 
-## 📁 Estrutura do repositório
+## Estrutura do repositório
 
-```text
+~~~text
 Licits/
 ├── src/
-│   ├── pages/              # Dashboard, contratos, fiscalização, administração
-│   ├── components/         # UI, formulários e componentes de negócio
-│   ├── contexts/           # Organização ativa
-│   ├── lib/                # Auth, queries e utilitários
-│   └── api/                # Cliente Base44 ainda necessário
-├── bd/entities/            # Modelos históricos do domínio
+│   ├── api/dataClient.js            # Gateway Supabase
+│   ├── components/                  # UI, contratos, formulários
+│   ├── pages/                       # Operação e autenticação
+│   ├── contexts/                    # Organização ativa
+│   └── lib/supabaseClient.js
 ├── supabase/
-│   ├── migrations/         # Schema, funções e regras de segurança
-│   └── tests/              # Scripts SQL de verificação
-├── docs/                   # Arquitetura, segurança e migração
-├── .github/workflows/      # Validação automatizada
-├── .env.example            # Configuração pública de exemplo
+│   ├── migrations/                  # Modelo relacional, RLS e constraints
+│   ├── functions/                   # Integrações seguras no servidor
+│   └── tests/                       # Testes SQL previstos
+├── docs/                             # Segurança e operação
+├── .github/workflows/ci.yml         # CI
+├── .env.example                     # Exemplo sem segredos
 └── package.json
-```
+~~~
 
-## 📚 Documentação
+## Segurança e próximos passos
 
-- [Autenticação e primeiro usuário](docs/AUTHENTICATION.md)
-- [Modelo de dados e migrations](docs/DATABASE.md)
-- [Controles e testes de segurança](docs/SECURITY.md)
-- [Progresso da migração](docs/MIGRATION_PROGRESS.md)
-- [Auditoria técnica da migração](docs/MIGRATION_AUDIT.md)
-- [Validação da fase de autenticação](docs/PHASE4_VALIDATION.md)
-- [README original preservado do ZIP](docs/README-ORIGINAL-DO-ZIP.md)
+- [x] Remover dependência direta do SDK Base44 no frontend.
+- [x] Adicionar gateway de dados Supabase com escopo por organização.
+- [x] Usar RPC transacional para baixa de itens (sem gravações separadas).
+- [x] Criar Edge Functions para integrações que exigem segredos.
+- [x] Configurar verificação de tipos, lint e build na CI.
+- [ ] Aplicar e validar migrations em projeto Supabase real.
+- [ ] Validar autenticação, permissões e isolamento com duas organizações reais.
+- [ ] Fazer testes de criação/edição/exclusão de contratos, documentos, fiscalização, atas e convidados.
+- [ ] Implantar Edge Functions e conferir convites, e-mails e IA com as chaves configuradas.
+- [ ] Revisar políticas de retenção, backup, monitoramento e compatibilidade para produção.
 
-## 🗺️ Próximos passos
-
-- [ ] Migrar contratos, fornecedores e itens da Base44 para Supabase.
-- [ ] Migrar documentos, fiscalizações, ocorrências e registros de preços.
-- [ ] Concluir notificações e fluxos de administração.
-- [ ] Implementar processamento seguro de documentos e IA no backend.
-- [ ] Executar testes de integração e isolamento entre organizações.
-- [ ] Eliminar dependências Base44 após validar a migração.
-- [ ] Publicar capturas de tela reais e uma demonstração após configurar o ambiente.
+**Leia:** [Autenticação](docs/AUTHENTICATION.md) · [Banco](docs/DATABASE.md) · [Segurança](docs/SECURITY.md) · [Migração anterior](docs/MIGRATION_PROGRESS.md)
 
 ---
 
 <div align="center">
 
-**LICITS** · Gestão contratual · React / Supabase · Projeto em desenvolvimento
-
-Mantido por **[Walter Matheus](https://github.com/WalterMatheusgg)**  
-[GitHub](https://github.com/WalterMatheusgg) · [NEXUS CRM](https://github.com/WalterMatheusgg/NEXUS)
+**LICITS — Gestão Contratual**  
+Mantido por [Walter Matheus](https://github.com/WalterMatheusgg) · [GitHub](https://github.com/WalterMatheusgg)
 
 </div>
