@@ -313,6 +313,10 @@ export const dataClient = {
     UploadFile: uploadFile,
     SendEmail: ({ to, subject, body }) => invokeFunction('send-email', { to, subject, body }),
     InvokeLLM: async ({ prompt, response_json_schema }) => (await invokeFunction('analyze-contract', { prompt, response_json_schema })).result,
-    ExtractDataFromUploadedFile: () => fail('Extração automática de documento ainda requer função específica de processamento.')
+    ExtractDataFromUploadedFile: async ({ file_url }) => {
+      const stored = uploads.get(file_url);
+      if (!stored) return fail('Envie o documento novamente antes de analisar.');
+      return invokeFunction('extract-document', { storage_bucket: stored.bucket, storage_path: stored.path });
+    }
   }}
 };
