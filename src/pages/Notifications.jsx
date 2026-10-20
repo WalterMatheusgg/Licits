@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,12 +33,12 @@ export default function Notifications() {
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
-    queryFn: () => base44.entities.Notification.list('-created_date', 100),
+    queryFn: () => dataClient.entities.Notification.list('-created_date', 100),
     initialData: [],
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id) => base44.entities.Notification.update(id, { read: true }),
+    mutationFn: (id) => dataClient.entities.Notification.update(id, { read: true }),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
@@ -50,7 +50,7 @@ export default function Notifications() {
     mutationFn: async () => {
       const unread = notifications.filter(n => !n.read);
       for (const n of unread) {
-        await base44.entities.Notification.update(n.id, { read: true });
+        await dataClient.entities.Notification.update(n.id, { read: true });
       }
     },
     onSuccess: () => {

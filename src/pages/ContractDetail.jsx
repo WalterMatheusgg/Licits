@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ export default function ContractDetail() {
   const { data: contract, isLoading } = useQuery({
     queryKey: ['contract', contractId],
     queryFn: async () => {
-      const list = await base44.entities.Contract.filter({ id: contractId });
+      const list = await dataClient.entities.Contract.filter({ id: contractId });
       return list[0];
     },
     enabled: !!contractId,
@@ -33,27 +33,27 @@ export default function ContractDetail() {
 
   const { data: items = [] } = useQuery({
     queryKey: ['contract-items', contractId],
-    queryFn: () => base44.entities.ContractItem.filter({ contract_id: contractId }),
+    queryFn: () => dataClient.entities.ContractItem.filter({ contract_id: contractId }),
     enabled: !!contractId,
     initialData: [],
   });
 
   const { data: fiscalRecords = [] } = useQuery({
     queryKey: ['fiscal-records', contractId],
-    queryFn: () => base44.entities.FiscalRecord.filter({ contract_id: contractId }, '-created_date'),
+    queryFn: () => dataClient.entities.FiscalRecord.filter({ contract_id: contractId }, '-created_date'),
     enabled: !!contractId,
     initialData: [],
   });
 
   const { data: occurrences = [] } = useQuery({
     queryKey: ['occurrences', contractId],
-    queryFn: () => base44.entities.Occurrence.filter({ contract_id: contractId }, '-created_date'),
+    queryFn: () => dataClient.entities.Occurrence.filter({ contract_id: contractId }, '-created_date'),
     enabled: !!contractId,
     initialData: [],
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Contract.update(contractId, data),
+    mutationFn: (data) => dataClient.entities.Contract.update(contractId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contract', contractId] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });

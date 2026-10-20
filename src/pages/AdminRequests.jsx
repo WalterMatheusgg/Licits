@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,12 +49,12 @@ export default function AdminRequests() {
   const [form, setForm] = useState({ request_type: 'edicao', entity_type: '', entity_label: '', description: '' });
   const queryClient = useQueryClient();
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['admin-requests'],
-    queryFn: () => base44.entities.AdminRequest.list('-created_date'),
+    queryFn: () => dataClient.entities.AdminRequest.list('-created_date'),
     initialData: [],
   });
 
@@ -62,7 +62,7 @@ export default function AdminRequests() {
   const pending = requests.filter(r => r.status === 'pendente' || r.status === 'em_analise');
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.AdminRequest.create({
+    mutationFn: (data) => dataClient.entities.AdminRequest.create({
       ...data,
       requester_email: currentUser?.email || '',
       requester_name: currentUser?.full_name || currentUser?.email || '',
@@ -76,9 +76,9 @@ export default function AdminRequests() {
       // If approving a deletion request, delete the associated entity first
       if (status === 'aprovado' && request.request_type === 'exclusao' && request.entity_id) {
         const entityName = ENTITY_MAP[request.entity_type?.toLowerCase()] || request.entity_type;
-        if (entityName && base44.entities[entityName]) {
+        if (entityName && dataClient.entities[entityName]) {
           try {
-            await base44.entities[entityName].delete(request.entity_id);
+            await dataClient.entities[entityName].delete(request.entity_id);
             logAudit('exclusao', entityName, request.entity_id, `Excluído via solicitação: ${request.entity_label || request.entity_id}`);
           } catch (e) {
             console.error('Erro ao excluir entidade:', e);
@@ -86,7 +86,7 @@ export default function AdminRequests() {
         }
       }
       // Then update the request status
-      return base44.entities.AdminRequest.update(request.id, {
+      return dataClient.entities.AdminRequest.update(request.id, {
         status,
         admin_response: responseText,
         resolved_by: currentUser?.email || '',
@@ -102,7 +102,7 @@ export default function AdminRequests() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.AdminRequest.update(id, { status }),
+    mutationFn: ({ id, status }) => dataClient.entities.AdminRequest.update(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-requests'] }),
   });
 

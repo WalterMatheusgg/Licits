@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { differenceInDays } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -74,12 +74,12 @@ export default function Dashboard() {
     return saved ? parseInt(saved) : 30;
   });
 
-  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
-  const { data: contracts = [], isLoading: contractsLoading } = useQuery({ queryKey: ['contracts'], queryFn: () => base44.entities.Contract.list('-created_date'), initialData: [] });
-  const { data: priceGroups = [] } = useQuery({ queryKey: ['price-groups-all'], queryFn: () => base44.entities.PriceRegistrationGroup.list(), initialData: [] });
-  const { data: notifications = [] } = useQuery({ queryKey: ['notifications-all'], queryFn: () => base44.entities.Notification.filter({ read: false }), initialData: [] });
-  const { data: adminRequests = [] } = useQuery({ queryKey: ['admin-requests'], queryFn: () => base44.entities.AdminRequest.filter({ status: 'pendente' }), initialData: [] });
+  const { data: contracts = [], isLoading: contractsLoading } = useQuery({ queryKey: ['contracts'], queryFn: () => dataClient.entities.Contract.list('-created_date'), initialData: [] });
+  const { data: priceGroups = [] } = useQuery({ queryKey: ['price-groups-all'], queryFn: () => dataClient.entities.PriceRegistrationGroup.list(), initialData: [] });
+  const { data: notifications = [] } = useQuery({ queryKey: ['notifications-all'], queryFn: () => dataClient.entities.Notification.filter({ read: false }), initialData: [] });
+  const { data: adminRequests = [] } = useQuery({ queryKey: ['admin-requests'], queryFn: () => dataClient.entities.AdminRequest.filter({ status: 'pendente' }), initialData: [] });
 
   const allItems = [
     ...contracts,

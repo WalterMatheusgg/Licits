@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,12 +39,12 @@ export default function OccurrenceTab({ contractId, contract }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    dataClient.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const { data: occurrences = [] } = useQuery({
     queryKey: ['occurrences', contractId],
-    queryFn: () => base44.entities.Occurrence.filter({ contract_id: contractId }, '-created_date'),
+    queryFn: () => dataClient.entities.Occurrence.filter({ contract_id: contractId }, '-created_date'),
     enabled: !!contractId,
     initialData: [],
   });
@@ -52,12 +52,12 @@ export default function OccurrenceTab({ contractId, contract }) {
   const isAdmin = currentUser?.role === 'admin';
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Occurrence.delete(id),
+    mutationFn: (id) => dataClient.entities.Occurrence.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['occurrences', contractId] })
   });
 
   const addMutation = useMutation({
-    mutationFn: (data) => base44.entities.Occurrence.create({
+    mutationFn: (data) => dataClient.entities.Occurrence.create({
       ...data, contract_id: contractId,
       contract_number: contract?.contract_number || '',
       supplier_name: contract?.supplier_name || '',
@@ -77,7 +77,7 @@ export default function OccurrenceTab({ contractId, contract }) {
     const file = e.target.files[0];
     if (!file) return;
     setUploadingFile(true);
-    const result = await base44.integrations.Core.UploadFile({ file });
+    const result = await dataClient.integrations.Core.UploadFile({ file });
     setForm(prev => ({ ...prev, file_url: result.file_url, file_name: file.name }));
     setUploadingFile(false);
   };

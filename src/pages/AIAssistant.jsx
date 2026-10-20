@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { dataClient } from '@/api/dataClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import ReactMarkdown from 'react-markdown';
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Olá! Sou o assistente IA do ContratoIA. Posso ajudar com informações sobre contratos, saldos, vencimentos, documentos e mais. Como posso ajudar?' }
+    { role: 'assistant', content: 'Olá! Sou o assistente IA do Licits. Posso ajudar com informações sobre contratos, saldos, vencimentos, documentos e mais. Como posso ajudar?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export default function AIAssistant() {
 
   const { data: contracts = [] } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date'),
+    queryFn: () => dataClient.entities.Contract.list('-created_date'),
     initialData: [],
   });
 
@@ -48,8 +48,8 @@ export default function AIAssistant() {
       prorrogacoes: c.extensions_done,
     }));
 
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é o assistente IA do sistema ContratoIA - gestão inteligente de contratos. 
+    const response = await dataClient.integrations.Core.InvokeLLM({
+      prompt: `Você é o assistente IA do sistema Licits - gestão inteligente de contratos. 
 Responda de forma clara, objetiva e em português brasileiro.
 Use dados reais dos contratos quando disponíveis.
 

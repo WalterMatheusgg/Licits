@@ -1,17 +1,3 @@
-import { base44 } from '@/api/base44Client';
-
-export async function logAudit(action, entityType = '', entityId = '', details = '') {
-  try {
-    const user = await base44.auth.me().catch(() => null);
-    await base44.entities.AuditLog.create({
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      details,
-      user_email: user?.email || '',
-      user_name: user?.full_name || '',
-    });
-  } catch (e) {
-    // audit logging should never break the main flow
-  }
-}
+// Auditoria é feita por triggers SQL no Supabase, na mesma transação que os dados.
+// Não há escrita direta de logs no browser: evita eventos falsificados ou divergências.
+export async function logAudit() { return undefined; }
