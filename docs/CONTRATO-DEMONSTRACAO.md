@@ -4,7 +4,7 @@ Este roteiro se refere a dados **100% fictícios**, **não constitui licitação
 
 | Identificação | Valor |
 | --- | --- |
-| Número do contrato | `014/2026-LICITS-DEMO` |
+| Número do contrato | `014/2026-NEXOFISCAL-DEMO` |
 | Pregão fictício | `PE-DEMO-014/2026` |
 | Valor contratado | R$ 100.000,00 |
 | Valor já utilizado | R$ 50.000,00 (50%) |
@@ -27,7 +27,7 @@ Não execute no ambiente de produção. Use conexão TLS e gerenciador de segred
 
 ## Testar a tela de contrato
 
-1. Entre com o fiscal e abra **Contratos → 014/2026-LICITS-DEMO → Estoque**.
+1. Entre com o fiscal e abra **Contratos → 014/2026-NEXOFISCAL-DEMO → Estoque**.
 2. Em **Baixar**, informe 30 kits e uma ordem de fornecimento. A prévia deve mostrar R$ 30 mil adicionais e utilização projetada de **80%**. Confirme. O aviso ficará na fila.
 3. Registre mais 10 kits, atingindo **90%** e um segundo aviso.
 4. Registre mais 10 kits, atingindo **100%**, sem saldo restante.
