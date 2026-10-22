@@ -1,4 +1,4 @@
-export default function LoadingScreen({ message = 'Carregando ContratoIA...' }) {
+export default function LoadingScreen({ message = 'Carregando Licits...' }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="text-center">

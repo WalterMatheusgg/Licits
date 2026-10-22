@@ -115,7 +115,7 @@ ${hasSevereOccurrences ? `<p style="margin-top:16px;padding:12px;border-left:4px
   </div>
 </div>
 
-<div class="footer">Documento gerado pelo sistema ContratoIA em ${new Date().toLocaleString('pt-BR')}</div>
+<div class="footer">Documento gerado pelo sistema Licits em ${new Date().toLocaleString('pt-BR')}</div>
 </body>
 </html>`;
 

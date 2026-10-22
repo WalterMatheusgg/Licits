@@ -148,7 +148,7 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
 <div class="sig-area">
   <div class="sig-box"><div class="sig-line"></div><strong>${r.signed_by_name || '_________________________'}</strong><p style="font-size:11px">Fiscal Responsável</p></div>
 </div>
-<div class="footer">Gerado pelo sistema ContratoIA em ${new Date().toLocaleString('pt-BR')}</div>
+<div class="footer">Gerado pelo sistema Licits em ${new Date().toLocaleString('pt-BR')}</div>
 </body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -197,7 +197,7 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
   <thead><tr><th>Tipo</th><th>Título</th><th>Data</th><th>Status</th><th>Assinado por</th><th>Data Assinatura</th></tr></thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="footer">Gerado pelo sistema ContratoIA em ${new Date().toLocaleString('pt-BR')}</div>
+<div class="footer">Gerado pelo sistema Licits em ${new Date().toLocaleString('pt-BR')}</div>
 </body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

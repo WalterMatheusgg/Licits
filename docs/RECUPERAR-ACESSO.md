@@ -4,7 +4,7 @@
 
 O ZIP de origem do Licits tinha login pelo Supabase Auth e, em paralelo, um SDK Base44 usado em fluxos de negocio. Na migracao para Supabase, o cliente de dados Base44 foi removido. O arquivo original ZIP, examinado no historico do GitHub, **nao contem .env ou .env.local** com as credenciais originais.
 
-O repositorio GitHub esta **publico**. Nao publique .env, senhas, service role, chaves privadas ou tokens nesse repositorio, mesmo que pretenda altera-lo para privado.
+O repositório pode ser privado ou público; **não versione .env, senhas, service role, chaves privadas ou tokens**, porque acesso de colaboradores, backups e histórico de Git continuam expondo esses valores.
 
 ## Recuperar a conexao sem criar outro banco
 
