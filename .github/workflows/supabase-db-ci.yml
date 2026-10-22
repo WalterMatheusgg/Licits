@@ -73,6 +73,11 @@ jobs:
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 \
             -f supabase/tests/integration_contract_create.sql
+      - name: Test atomic document import and rollback
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f supabase/tests/atomic_document_import_integration.sql
       - name: Validate backup with matching PostgreSQL 17 client
         run: |
           bash -n scripts/backup-database.sh
