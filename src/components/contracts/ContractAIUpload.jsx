@@ -8,55 +8,24 @@ export default function ContractAIUpload({ onSave, isLoading }) {
   const [file, setFile] = useState(null);
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState(null);
+  const [errorText, setErrorText] = useState('');
 
   const handleUpload = async () => {
     if (!file) return;
+    setErrorText('');
     setExtracting(true);
     try {
-    const { file_url } = await dataClient.integrations.Core.UploadFile({ file });
-
-    const result = await dataClient.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: {
-        type: "object",
-        properties: {
-          contract_number: { type: "string" },
-          object: { type: "string" },
-          supplier_name: { type: "string" },
-          supplier_cnpj: { type: "string" },
-          start_date: { type: "string" },
-          end_date: { type: "string" },
-          total_value: { type: "number" },
-          modality: { type: "string" },
-          items: { type: "array", items: { type: "object", properties: { description: { type: "string" }, quantity: { type: "number" }, unit_price: { type: "number" }, unit: { type: "string" } } } }
-        }
-      }
-    });
-
-    if (result.status === 'success' && result.output) {
-      const summary = await dataClient.integrations.Core.InvokeLLM({
-        prompt: `Analise os dados extraídos deste contrato e gere: 1) Um resumo executivo breve. 2) Principais riscos identificados. 3) Cláusulas críticas. Dados: ${JSON.stringify(result.output)}`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            summary: { type: "string" },
-            risks: { type: "string" },
-            critical_clauses: { type: "string" }
-          }
-        }
-      });
-
+      const uploaded = await dataClient.integrations.Core.UploadFile({ file });
       setExtracted({
-        ...result.output,
-        file_url,
-        ai_summary: summary.summary,
-        ai_risks: summary.risks,
-        clauses: summary.critical_clauses,
-        status: 'em_analise'
+        file_url: uploaded.file_url,
+        contract_number: '',
+        object: '',
+        supplier_name: '',
+        total_value: 0,
+        status: 'em_analise',
       });
-    }
     } catch (error) {
-      alert('Análise documental indisponível: ' + error.message);
+      setErrorText('Falha ao enviar arquivo: ' + error.message);
     } finally {
       setExtracting(false);
     }
@@ -79,9 +48,10 @@ export default function ContractAIUpload({ onSave, isLoading }) {
         </label>
       </div>
 
+      {errorText && <p role="alert" className="text-sm text-destructive">{errorText}</p>}
       {file && !extracted && (
         <Button onClick={handleUpload} disabled={extracting} className="w-full gap-2">
-          {extracting ? <><Loader2 className="w-4 h-4 animate-spin" /> Analisando com IA...</> : <><Sparkles className="w-4 h-4" /> Analisar com IA</>}
+          {extracting ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando documento...</> : <><Sparkles className="w-4 h-4" /> Enviar documento</>}
         </Button>
       )}
 
@@ -90,7 +60,7 @@ export default function ContractAIUpload({ onSave, isLoading }) {
           <Card className="p-4 bg-accent/5 border-accent/20">
             <div className="flex items-center gap-2 mb-3">
               <CheckCircle className="w-4 h-4 text-accent" />
-              <span className="text-sm font-semibold text-accent">Dados extraídos com sucesso</span>
+              <span className="text-sm font-semibold text-accent">Documento enviado. Preencha os dados antes de salvar.</span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-muted-foreground">Nº:</span> <strong>{extracted.contract_number}</strong></div>
@@ -102,7 +72,7 @@ export default function ContractAIUpload({ onSave, isLoading }) {
 
           {extracted.ai_summary && (
             <Card className="p-4">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Resumo IA</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Resumo</h4>
               <p className="text-sm">{extracted.ai_summary}</p>
             </Card>
           )}
@@ -114,7 +84,19 @@ export default function ContractAIUpload({ onSave, isLoading }) {
             </Card>
           )}
 
-          <Button onClick={() => onSave(extracted)} disabled={isLoading} className="w-full gap-2">
+          <div className="space-y-3">
+            <label className="block text-sm">Número do contrato <input className="w-full border rounded-lg p-2 bg-background" value={extracted.contract_number} onChange={e=>setExtracted(p=>({...p,contract_number:e.target.value}))} /></label>
+            <label className="block text-sm">Objeto <textarea className="w-full border rounded-lg p-2 bg-background" value={extracted.object} onChange={e=>setExtracted(p=>({...p,object:e.target.value}))} /></label>
+            <label className="block text-sm">Fornecedor <input className="w-full border rounded-lg p-2 bg-background" value={extracted.supplier_name} onChange={e=>setExtracted(p=>({...p,supplier_name:e.target.value}))} /></label>
+            <label className="block text-sm">Valor total (R$) <input type="number" min="0" step="0.01" className="w-full border rounded-lg p-2 bg-background" value={extracted.total_value} onChange={e=>setExtracted(p=>({...p,total_value:Number(e.target.value)}))} /></label>
+          </div>
+          <Button onClick={() => {
+            if (!extracted.contract_number.trim() || !extracted.object.trim() || !extracted.supplier_name.trim()) {
+              setErrorText('Preencha número, objeto e fornecedor antes de salvar.');
+              return;
+            }
+            onSave(extracted);
+          }} disabled={isLoading} className="w-full gap-2">
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
             Salvar Contrato
           </Button>
