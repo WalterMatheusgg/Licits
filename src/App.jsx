@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -8,27 +9,28 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import OrganizationGate from '@/components/auth/OrganizationGate';
 import RequirePermission from '@/components/auth/RequirePermission';
 import PageNotFound from '@/lib/PageNotFound';
+import LoadingScreen from '@/components/auth/LoadingScreen';
 
 import AppLayout from '@/components/layout/AppLayout';
-import Login from '@/pages/auth/Login';
-import ForgotPassword from '@/pages/auth/ForgotPassword';
-import UpdatePassword from '@/pages/auth/UpdatePassword';
-import Dashboard from '@/pages/Dashboard';
-import Contracts from '@/pages/Contracts';
-import ContractDetail from '@/pages/ContractDetail';
-import ContractTable from '@/pages/ContractTable';
-import Documents from '@/pages/Documents';
-import Fiscal from '@/pages/Fiscal';
-import MapBrazil from '@/pages/MapBrazil';
-import Notifications from '@/pages/Notifications';
-import AIAssistant from '@/pages/AIAssistant';
-import Users from '@/pages/Users';
-import Audit from '@/pages/Audit';
-import AlertsEmail from '@/pages/AlertsEmail';
-import Contacts from '@/pages/Contacts';
-import AdminRequests from '@/pages/AdminRequests';
-import PriceRegistrations from '@/pages/PriceRegistrations';
-import ContractAnalytics from '@/pages/ContractAnalytics';
+const Login = lazy(() => import('@/pages/auth/Login'));
+const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
+const UpdatePassword = lazy(() => import('@/pages/auth/UpdatePassword'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Contracts = lazy(() => import('@/pages/Contracts'));
+const ContractDetail = lazy(() => import('@/pages/ContractDetail'));
+const ContractTable = lazy(() => import('@/pages/ContractTable'));
+const Documents = lazy(() => import('@/pages/Documents'));
+const Fiscal = lazy(() => import('@/pages/Fiscal'));
+const MapBrazil = lazy(() => import('@/pages/MapBrazil'));
+const Notifications = lazy(() => import('@/pages/Notifications'));
+const AIAssistant = lazy(() => import('@/pages/AIAssistant'));
+const Users = lazy(() => import('@/pages/Users'));
+const Audit = lazy(() => import('@/pages/Audit'));
+const AlertsEmail = lazy(() => import('@/pages/AlertsEmail'));
+const Contacts = lazy(() => import('@/pages/Contacts'));
+const AdminRequests = lazy(() => import('@/pages/AdminRequests'));
+const PriceRegistrations = lazy(() => import('@/pages/PriceRegistrations'));
+const ContractAnalytics = lazy(() => import('@/pages/ContractAnalytics'));
 
 function AppRoutes() {
   return (
@@ -75,7 +77,9 @@ function App() {
       <Router>
         <AuthProvider>
           <OrganizationProvider>
-            <AppRoutes />
+            <Suspense fallback={<LoadingScreen message="Carregando módulo do Licits..." />}>
+              <AppRoutes />
+            </Suspense>
             <Toaster />
           </OrganizationProvider>
         </AuthProvider>
