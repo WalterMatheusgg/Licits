@@ -68,7 +68,7 @@ Deno.serve(async req => {
       if (operation === 'create_credential') {
         const name = String(body.name || '').trim();
         const scopes = Array.isArray(body.scopes) ? [...new Set(body.scopes)] : ['contracts:read'];
-        if (!name || name.length > 100 || !scopes.length || scopes.some((scope:string) => !['contracts:read','contracts:write'].includes(scope))) {
+        if (!name || name.length > 100 || !scopes.length || scopes.some((scope:unknown) => typeof scope !== 'string' || !['contracts:read','contracts:write'].includes(scope))) {
           return json({error:'Nome e escopos válidos são obrigatórios'},400);
         }
         let expiresAt: string | null = null;
