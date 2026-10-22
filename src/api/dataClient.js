@@ -348,6 +348,15 @@ const entities = new Proxy({}, { get(_, name) {
   };
 }});
 export const dataClient = {
+  admin: {
+    resolveRequest: async (requestId, status, response = '') => {
+      const ctx = await context();
+      if (!['organization_admin'].includes(ctx.role)) fail('Somente administrador da organização pode resolver solicitações.');
+      return unwrap(await supabase.rpc('resolve_admin_request', {
+        p_request_id: requestId, p_status: status, p_response: response,
+      }));
+    },
+  },
   finance: {
     alerts: async () => {
       const ctx = await context();
