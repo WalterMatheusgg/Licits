@@ -42,6 +42,11 @@ jobs:
           test "$RLS_COUNT" -ge 19
           test "$ARP_COUNT" -eq 1
           test "$READ_COUNT" -eq 1
+      - name: Verify atomic administrative resolution RPC
+        run: |
+          DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='resolve_admin_request';" | grep -qx 1
+          psql "$DB" -v ON_ERROR_STOP=1 -Atc "select has_function_privilege('anon','public.resolve_admin_request(uuid,public.admin_request_status,text)','EXECUTE');" | grep -qx f
       - name: Test real tenant isolation and atomic inventory in PostgreSQL
         run: |
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
