@@ -412,3 +412,8 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# JWT is verified inside the handler so it can also accept scoped lct_ integration tokens.
+# Never remove token validation from the function itself.
+[functions.integration-contracts]
+verify_jwt = false
