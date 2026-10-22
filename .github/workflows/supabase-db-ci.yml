@@ -51,6 +51,11 @@ jobs:
         run: |
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 -f supabase/tests/invitations_quotas_integration.sql
+      - name: Test fiscal purchase limits and budget alerts
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f supabase/tests/budget_alerts_integration.sql
       - name: Validate backup with matching PostgreSQL 17 client
         run: |
           bash -n scripts/backup-database.sh
