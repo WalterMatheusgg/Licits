@@ -18,7 +18,7 @@ async function deliverAlert(db: any, alert: any, contract: any, subject: string,
       headers: {
         'Authorization': 'Bearer ' + resendKey,
         'Content-Type': 'application/json',
-        'Idempotency-Key': 'licits-' + alert.id + '-' + person.id,
+        'Idempotency-Key': 'nexofiscal-' + alert.id + '-' + person.id,
       },
       body: JSON.stringify({from: sender, to: [person.email], subject, text}),
     });
@@ -53,9 +53,9 @@ Deno.serve(async (req) => {
       const contract=result.data;
       const brl=(num:number)=>Number(num).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
       const pct=contract.total_value>0 ? contract.used_value*100/contract.total_value:0;
-      const baseURL=Deno.env.get('LICITS_PUBLIC_URL') || '';
+      const baseURL=Deno.env.get('NEXOFISCAL_PUBLIC_URL') || '';
       const url=/^https:\/\//.test(baseURL)? '\nAcessar contrato: '+baseURL.replace(/\/$/,'')+'/contracts/'+contract.id:'';
-      const subject='[Licits] Contrato '+contract.contract_number+' — '+alert.threshold_percent+'% do teto';
+      const subject='[NexoFiscal] Contrato '+contract.contract_number+' — '+alert.threshold_percent+'% do teto';
       const message=[
         'ALERTA DE CONTROLE CONTRATUAL — FISCALIZAÇÃO',
         'Contrato: '+contract.contract_number,
@@ -105,9 +105,9 @@ Deno.serve(async (req) => {
       const days = Number(alert.threshold_days);
       const when = days === 0 ? 'vence hoje' : `vence em ${days} dia(s)`;
       const brl = (num:number) => Number(num).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-      const baseURL = Deno.env.get('LICITS_PUBLIC_URL') || '';
+      const baseURL = Deno.env.get('NEXOFISCAL_PUBLIC_URL') || '';
       const url = /^https:\/\//.test(baseURL) ? '\nAcessar contrato: '+baseURL.replace(/\/$/,'')+'/contracts/'+contract.id : '';
-      const subject = '[Licits] Contrato '+contract.contract_number+' '+when;
+      const subject = '[NexoFiscal] Contrato '+contract.contract_number+' '+when;
       const message = [
         'ALERTA DE VIGÊNCIA CONTRATUAL — FISCALIZAÇÃO',
         'Contrato: '+contract.contract_number,
