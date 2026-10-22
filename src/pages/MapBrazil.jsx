@@ -9,13 +9,16 @@ import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import marker2x from 'leaflet/dist/images/marker-icon-2x.png';
+import marker from 'leaflet/dist/images/marker-icon.png';
+import shadow from 'leaflet/dist/images/marker-shadow.png';
 
 // Fix leaflet marker icon
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: marker2x,
+  iconUrl: marker,
+  shadowUrl: shadow,
 });
 
 const STATE_COORDS = {
@@ -50,7 +53,7 @@ export default function MapBrazil() {
   ];
 
   const filtered = allSuppliers.filter(c => {
-    if (!c.supplier_state) return false;
+    if (!STATE_COORDS[String(c.supplier_state || '').trim().toUpperCase()]) return false;
     if (stateFilter !== 'all' && c.supplier_state !== stateFilter) return false;
     if (statusFilter !== 'all' && c.status !== statusFilter) return false;
     return true;
@@ -104,10 +107,10 @@ export default function MapBrazil() {
                   attribution='&copy; OpenStreetMap'
                 />
                 {filtered.map(c => {
-                  const coords = STATE_COORDS[c.supplier_state];
+                  const coords = STATE_COORDS[String(c.supplier_state || '').trim().toUpperCase()];
                   if (!coords) return null;
                   return (
-                    <Marker key={c.id} position={[coords[0] + Math.random() * 0.5 - 0.25, coords[1] + Math.random() * 0.5 - 0.25]}>
+                    <Marker key={c.id} position={coords}>
                       <Popup>
                        <div className="text-sm">
                          <p className="font-bold">{c.supplier_name}</p>
