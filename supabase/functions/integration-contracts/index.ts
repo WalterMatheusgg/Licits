@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { json, options, authorize, member, env } from '../_shared/security.ts';
+import { normalizeErpContract } from '../_shared/erp-adapter.ts';
 const contractStatuses = ['ativo', 'vencido', 'encerrado', 'suspenso', 'cancelado', 'em_analise', 'em_analise_slic'];
 const contractFields = new Set([
   'contract_number', 'sei_number', 'auction_number', 'object', 'status', 'start_date', 'end_date',
@@ -97,11 +98,19 @@ Deno.serve(async req => {
       if (revoked.error) throw revoked.error;
       return json({api_version:'v1',data:revoked.data});
     }
-    if (operation === 'create') {
+    if (operation === 'create' || operation === 'ingest') {
       if (!canWrite) {
         return json({error:'Acesso de escrita restrito ao administrador ou gestor'}, 403);
       }
-      const item = body.contract || {};
+      let item: Record<string, unknown>;
+      if (operation === 'ingest') {
+        const provider = String(body.provider || 'generic');
+        if (!['generic', 'br_publico'].includes(provider)) return json({error:'Provedor não suportado'},400);
+        try { item = normalizeErpContract(provider as 'generic' | 'br_publico', body.payload); }
+        catch { return json({error:'Payload de integração inválido'},400); }
+      } else {
+        item = body.contract || {};
+      }
       const contract_number = String(item.contract_number || '').trim();
       const object = String(item.object || '').trim();
       const supplier_name = String(item.supplier_name || '').trim();
@@ -121,7 +130,16 @@ Deno.serve(async req => {
         p_supplier_cnpj:cnpj || null,
         p_total_value:amount,
       });
-      if (created.error?.code === '23505') return json({error:'Contrato com este número já existe'},409);
+      if (created.error?.code === '23505') {
+        if (operation === 'ingest') {
+          const existing = await admin.from('contracts').select('id,contract_number')
+            .eq('organization_id',organization_id).eq('contract_number',contract_number)
+            .is('deleted_at',null).maybeSingle();
+          if (existing.error) throw existing.error;
+          if (existing.data) return json({api_version:'v1',data:existing.data,already_exists:true});
+        }
+        return json({error:'Contrato com este número já existe'},409);
+      }
       if (created.error) throw created.error;
       return json({api_version:'v1',data:created.data},201);
     }
