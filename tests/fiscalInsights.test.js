@@ -7,24 +7,24 @@ const rows = [
 ];
 test('resumo mantém aritmética numérica', () => {
  const r=fiscalAnswer('resumo dos contratos',rows);
- assert.match(r,/3\\.000,00/);
- assert.match(r,/2\\.300,00/);
+ assert.ok(r.includes('3.000,00'));
+ assert.ok(r.includes('2.300,00'));
 });
 test('alerta de teto detecta 90% de consumo e saldo', () => {
  const r=fiscalAnswer('quais contratos estão em risco do teto?',rows);
- assert.match(r,/CT-200\\/2026/);
- assert.match(r,/90\\.0%/);
- assert.doesNotMatch(r,/CT-100\\/2026/);
+ assert.ok(r.includes('CT-200/2026'));
+ assert.ok(r.includes('90.0%'));
+ assert.ok(!r.includes('CT-100/2026'));
 });
 test('consulta por numero inclui saldo especifico', () => {
  const r=fiscalAnswer('fale sobre CT-100/2026',rows);
- assert.match(r,/CT-100\\/2026/);
+ assert.ok(r.includes('CT-100/2026'));
  assert.match(r,/500,00/);
 });
 test('fiscalizacao fraca produz lista', () => {
  const r=fiscalAnswer('fiscalizacao baixa',rows);
- assert.match(r,/CT-200\\/2026/);
- assert.doesNotMatch(r,/CT-100\\/2026/);
+ assert.ok(r.includes('CT-200/2026'));
+ assert.ok(!r.includes('CT-100/2026'));
 });
 test('consulta desconhecida delega para IA', () => assert.equal(fiscalAnswer('olá',rows),null));
 test('dados vazios não inventam risco', () => assert.match(fiscalAnswer('risco',[]),/nenhum/));
