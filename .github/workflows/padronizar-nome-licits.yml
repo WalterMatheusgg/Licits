@@ -1,0 +1,103 @@
+name: Padronizar identidade Licits
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/padronizar-nome-licits.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Padronizar textos e referencias sem alterar migrations historicas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          names = subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+          replacements = (
+              ('NEXOFISCAL','LICITS'),
+              ('NexoFiscal','Licits'),
+              ('nexofiscal','licits'),
+              ('Nexo Fiscal','Licits'),
+              ('nexo fiscal','Licits'),
+              ('NEXO','LICITS'),
+              ('Nexo','Licits'),
+              ('nexo','licits'),
+          )
+          touched=[]
+          for name in names:
+              if not name or name.startswith('supabase/migrations/'):
+                  continue # Applied SQL checksums must never be rewritten.
+              if name == '.github/workflows/padronizar-nome-licits.yml':
+                  continue
+              path=Path(name)
+              if not path.is_file() or path.is_symlink():
+                  continue
+              if path.suffix.lower() in {'.png','.jpg','.jpeg','.gif','.ico','.pdf','.zip','.webp'}:
+                  continue
+              try:
+                  content=path.read_text(encoding='utf-8')
+              except UnicodeError:
+                  continue
+              changed=content
+              for old,new in replacements:
+                  changed=changed.replace(old,new)
+              if name == 'src/components/layout/TopBar.jsx':
+                  changed=changed.replace(
+                      "(window.localStorage.getItem('licits.theme') ?? window.localStorage.getItem('licits.theme'))",
+                      "window.localStorage.getItem('licits.theme')")
+              if name == 'bd/config.jsonc':
+                  changed=changed.replace('"name": "untitled"','"name": "licits"')
+              if changed != content:
+                  path.write_text(changed,encoding='utf-8')
+                  touched.append(name)
+          old=Path('docs/PLANO-PRODUCAO-NEXOFISCAL.md')
+          new=Path('docs/PLANO-PRODUCAO-LICITS.md')
+          if old.is_file():
+              if new.exists():
+                  raise FileExistsError(new)
+              old.rename(new)
+              plan=new.read_text(encoding='utf-8')
+              plan=plan.replace(
+                  'Nome de interface proposto: **Licits**. Nome do repositório e identificadores técnicos antigos permanecem para evitar quebra de URLs e integrações.',
+                  'Nome único do sistema e do repositório: **Licits**. A padronização preserva o histórico, os identificadores do banco e os nomes de segredos já provisionados.')
+              new.write_text(plan,encoding='utf-8')
+              touched.append(str(new))
+          print('Arquivos padronizados:',len(touched))
+          print('\n'.join(touched))
+          for name in names:
+              if name and not name.startswith('supabase/migrations/') and name != '.github/workflows/padronizar-nome-licits.yml':
+                  path=Path(name)
+                  if path.is_file():
+                      try:
+                          if 'nexofiscal' in path.read_text(encoding='utf-8').lower():
+                              raise RuntimeError('Nome antigo ainda presente: '+name)
+                      except UnicodeError:
+                          pass
+          PY
+      - name: Remover este workflow de uso único
+        run: git rm -f -- .github/workflows/padronizar-nome-licits.yml
+      - name: Publicar somente na main
+        run: |
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git diff --cached --check
+          git diff --cached --stat
+          if ! git diff --cached --quiet; then
+            git commit -m "refactor: padronizar nome do sistema como Licits"
+            git push origin HEAD:main
+          fi
