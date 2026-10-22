@@ -22,6 +22,8 @@ begin
     where id=p_credential_id and revoked_at is null
       and (expires_at is null or expires_at>now())
   ) then return false; end if;
+  delete from public.integration_request_counters
+    where credential_id=p_credential_id and minute_start < now()-interval '1 day';
   insert into public.integration_request_counters(credential_id,minute_start,request_count)
   values (p_credential_id,v_minute,1)
   on conflict(credential_id,minute_start) do update
