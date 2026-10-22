@@ -58,14 +58,12 @@ export default function AdminRequests() {
     initialData: [],
   });
 
-  const myRequests = requests.filter(r => r.requester_email === currentUser?.email);
+  const myRequests = requests.filter(r => r.requester_id === currentUser?.id);
   const pending = requests.filter(r => r.status === 'pendente' || r.status === 'em_analise');
 
   const createMutation = useMutation({
     mutationFn: (data) => dataClient.entities.AdminRequest.create({
       ...data,
-      requester_email: currentUser?.email || '',
-      requester_name: currentUser?.full_name || currentUser?.email || '',
       status: 'pendente',
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-requests'] }); setShowNew(false); setForm({ request_type: 'edicao', entity_type: '', entity_label: '', description: '' }); }
@@ -81,15 +79,17 @@ export default function AdminRequests() {
             await dataClient.entities[entityName].delete(request.entity_id);
             logAudit('exclusao', entityName, request.entity_id, `Excluído via solicitação: ${request.entity_label || request.entity_id}`);
           } catch (e) {
-            console.error('Erro ao excluir entidade:', e);
+            throw new Error('Não foi possível arquivar o registro solicitado: ' + e.message);
           }
+        } else {
+          throw new Error('Tipo de registro não suportado para exclusão automática.');
         }
       }
       // Then update the request status
       return dataClient.entities.AdminRequest.update(request.id, {
         status,
         admin_response: responseText,
-        resolved_by: currentUser?.email || '',
+        resolved_by: currentUser?.id,
         resolved_at: new Date().toISOString(),
       });
     },
@@ -121,6 +121,7 @@ export default function AdminRequests() {
           <p className="text-sm mt-1">{r.description}</p>
           {!isAdmin && <p className="text-xs text-muted-foreground mt-1">Solicitado por: <strong>{r.requester_name || r.requester_email}</strong></p>}
           {isAdmin && <p className="text-xs text-muted-foreground mt-1">De: <strong>{r.requester_name || r.requester_email}</strong></p>}
+          {respondMutation.isError && respondingId === r.id && <p role="alert" className="text-sm text-destructive">{respondMutation.error?.message}</p>}
           {r.admin_response && (
             <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
               <span className="font-semibold">Resposta: </span>{r.admin_response}
