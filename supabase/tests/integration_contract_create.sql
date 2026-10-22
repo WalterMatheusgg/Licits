@@ -58,6 +58,16 @@ begin
   'ERP CI',repeat('a',64),array['contracts:read'],null
  );
  credential_id:=(credential->>'id')::uuid;
+ if not public.claim_integration_request(credential_id) then
+   raise exception 'First integration request was unexpectedly limited'; end if;
+ for i in 2..60 loop
+   if not public.claim_integration_request(credential_id) then
+     raise exception 'Integration quota rejected request %',i; end if;
+ end loop;
+ if public.claim_integration_request(credential_id) then
+   raise exception 'Integration quota failed to block the 61st request'; end if;
+ if has_function_privilege('authenticated','public.claim_integration_request(uuid)','EXECUTE') then
+   raise exception 'Authenticated role can bypass integration rate limits'; end if;
  perform public.revoke_integration_credential(
   'c1000000-0000-4000-8000-000000000002',
   'c1000000-0000-4000-8000-000000000001',credential_id
