@@ -115,7 +115,7 @@ export default function Dashboard() {
           <div className="w-64 h-64 rounded-full border-[30px] border-white absolute right-10 bottom-0" />
         </div>
         <div className="relative">
-          <p className="text-muted-foreground text-sm font-medium mb-1">Plataforma de Gestão</p>
+          <p className="text-muted-foreground text-sm font-medium mb-1">NexoFiscal · Central de fiscalização</p>
           <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">Gestão Contratual</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             {currentUser ? `Bem-vindo, ${currentUser.full_name?.split(' ')[0] || 'usuário'} · ` : ''}
@@ -129,7 +129,7 @@ export default function Dashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <EmptyState
             icon={FileText}
-            title="Bem-vindo ao Licits!"
+            title="Bem-vindo ao NexoFiscal!"
             message="Você ainda não possui contratos cadastrados. Comece criando seu primeiro contrato ou utilize a leitura inteligente com IA para extrair dados automaticamente."
             action={
               <div className="flex gap-3 flex-wrap justify-center">
