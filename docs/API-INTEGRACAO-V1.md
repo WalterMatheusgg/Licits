@@ -38,3 +38,27 @@ npx supabase functions list
 - testes de integração reais no Supabase.
 
 Não exponha o endpoint publicamente sem o gateway de autorização e o controle de taxa apropriados.
+
+## Criar contrato via API própria (sem OpenAI)
+A função `integration-contracts` também recebe `operation: "create"` para usuários autenticados que sejam gestores ou administradores ativos. Todos os novos contratos entram no status **em_analise**; não há autorização automática para gastos.
+
+```bash
+curl -X POST 'https://nefimqoszcidsnqvlnnh.supabase.co/functions/v1/integration-contracts' \
+  -H 'apikey: SUA_CHAVE_PUBLICAVEL' \
+  -H 'Authorization: Bearer TOKEN_DE_USUARIO_AUTENTICADO' \
+  -H 'Content-Type: application/json' \
+  --data '{
+    "operation": "create",
+    "organization_id": "UUID_DA_ORGANIZACAO",
+    "contract": {
+      "contract_number": "CT-001/2026",
+      "object": "Fornecimento de materiais de expediente",
+      "supplier_name": "Fornecedor de Exemplo",
+      "total_value": 100000.00
+    }
+  }'
+```
+
+A criação utiliza a identidade do usuário autenticado e o `organization_id` validado no backend, nunca uma chave da OpenAI. A resposta bem-sucedida tem HTTP 201. Contratos com mesmo número são recusados com HTTP 409 (verificação preliminar e índice único no banco).
+
+**Atenção:** esse fluxo executa duas inserções (fornecedor e contrato), portanto não é atômico e ainda precisa de teste de concorrência, auditoria de erros e de um adaptador de identidade máquina-a-máquina antes do uso por integrações de produção. Nunca compartilhe tokens de usuários em código-fonte. A função depende de deploy no Supabase.
