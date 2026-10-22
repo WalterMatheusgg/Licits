@@ -33,7 +33,7 @@ export default function AIAssistant() {
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setLoading(true);
 
-    const contractContext = contracts.slice(0, 20).map(c => ({
+    const contractContext = contracts.slice(0, 100).map(c => ({
       numero: c.contract_number,
       objeto: c.object,
       empresa: c.supplier_name,
@@ -51,7 +51,7 @@ export default function AIAssistant() {
     try {
     const response = await dataClient.integrations.Core.InvokeLLM({
       prompt: `Você é o assistente IA do sistema Licits - gestão inteligente de contratos. 
-Responda de forma clara, objetiva e em português brasileiro.
+Responda de forma clara, objetiva e em português brasileiro. Não invente contratos nem valores. Identifique claramente dados ausentes. Para consultas sobre saldo e risco, calcule sobre os registros informados; não afirme que a lista é exaustiva se houver mais registros que o limite. Nunca autorize gastos ou altere contratos.
 Use dados reais dos contratos quando disponíveis.
 
 Contratos cadastrados no sistema:
