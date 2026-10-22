@@ -32,7 +32,7 @@ const roleLabels = {
 
 export default function TopBar({ onMenuClick }) {
   const [darkMode, setDarkMode] = useState(() => (
-    window.localStorage.getItem('licits.theme') === 'dark'
+    (window.localStorage.getItem('nexofiscal.theme') ?? window.localStorage.getItem('licits.theme')) === 'dark'
   ));
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
@@ -52,7 +52,8 @@ export default function TopBar({ onMenuClick }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
-    window.localStorage.setItem('licits.theme', darkMode ? 'dark' : 'light');
+    window.localStorage.setItem('nexofiscal.theme', darkMode ? 'dark' : 'light');
+    window.localStorage.removeItem('licits.theme');
   }, [darkMode]);
 
   const { data: notifications = [] } = useQuery({
