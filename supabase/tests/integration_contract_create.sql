@@ -42,6 +42,10 @@ begin
  if updated->>'id'<>contract_id::text or
    (select notes from public.contracts where id=contract_id)<>'Atualização auditada'
  then raise exception 'Contract update was not applied'; end if;
+ raise notice 'Contract audit evidence: %', (
+   select coalesce(jsonb_agg(jsonb_build_object('action', action, 'entity_type', entity_type, 'changed_fields', metadata->'changed_fields')), '[]'::jsonb)
+   from public.audit_logs where entity_id=contract_id
+ );
  if (select count(*) from public.audit_logs where entity_id=contract_id and entity_type='contracts'
    and action in ('create','update'))<>2
  then raise exception 'Contract create/update was not audited'; end if;
