@@ -12,6 +12,11 @@ export default function AlertsEmail() {
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [done, setDone] = useState(false);
+  const {data: budgetAlerts = [], error: budgetError} = useQuery({
+    queryKey: ['fiscal-budget-alert-queue'],
+    queryFn: () => dataClient.finance.alerts(),
+    refetchInterval: 60000,
+  });
 
   const { data: contracts = [] } = useQuery({
     queryKey: ['contracts'],
@@ -113,7 +118,7 @@ export default function AlertsEmail() {
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Mail className="w-6 h-6" /> Alertas por E-mail
         </h1>
-        <p className="text-sm text-muted-foreground">Envie alertas automáticos para usuários de nível 1 (Admin) e nível 2 (Gestor)</p>
+        <p className="text-sm text-muted-foreground">Acompanhe a fila automática de alertas por orçamento. O resumo manual abaixo pode ser enviado separadamente.</p>
       </motion.div>
 
       {/* Summary Cards */}
@@ -149,6 +154,29 @@ export default function AlertsEmail() {
           </div>
         </Card>
       </div>
+
+      {/* Durable automatic alerts, with honest delivery states. */}
+      <Card className="p-4 lg:p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><h2 className="font-bold">Alertas automáticos de orçamento</h2>
+          <p className="text-sm text-muted-foreground">Avisos de 80%, 90% e 100% gerados ao registrar compras. Destino: fiscal atribuído e administradores.</p></div>
+          <Badge variant="outline">{budgetAlerts.length} alertas registrados</Badge>
+        </div>
+        {budgetError && <p className="text-sm text-red-600" role="alert">{budgetError.message}</p>}
+        <p className="text-xs text-amber-700">O e-mail externo requer implantação da função dispatch-budget-alerts, Resend e agendamento. Sem isso, avisos ficam pendentes na fila.</p>
+        {!budgetAlerts.length
+          ? <p className="text-sm text-muted-foreground">Nenhum marco orçamentário alcançado nesta organização.</p>
+          : <div className="space-y-2 max-h-80 overflow-y-auto">{budgetAlerts.slice(0,30).map(a => {
+            const c = contracts.find(v=>v.id===a.contract_id);
+            const label=a.status==='sent'?'E-mail encaminhado':a.status==='failed'?'Falha — em tentativa':a.status==='processing'?'Processando':'Aguardando envio';
+            return <div className="flex justify-between gap-3 border rounded-lg p-3" key={a.id}>
+              <div><p className="text-sm font-semibold">{c?.contract_number || a.contract_id} · {a.threshold_percent}% do teto</p>
+                <p className="text-xs text-muted-foreground">Utilização no marco: {Number(a.amount_used).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} de {Number(a.budget_total).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>
+              </div>
+              <Badge className={a.status==='sent'?'bg-emerald-100 text-emerald-800':a.status==='failed'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-800'}>{label}</Badge>
+            </div>;
+          })}</div>}
+      </Card>
 
       {/* Recipients list */}
       <Card className="border-0 shadow-sm">
@@ -217,11 +245,11 @@ export default function AlertsEmail() {
       {/* Send button */}
       <div className="flex items-center gap-4">
         <Button onClick={handleSendAlerts} disabled={sending || recipients.length === 0} className="gap-2" size="lg">
-          {sending ? <><Loader2 className="w-4 h-4 animate-spin" />Enviando {sentCount}/{recipients.length}...</> : <><Mail className="w-4 h-4" />Enviar Alertas Agora</>}
+          {sending ? <><Loader2 className="w-4 h-4 animate-spin" />Enviando {sentCount}/{recipients.length}...</> : <><Mail className="w-4 h-4" />Enviar resumo manual agora</>}
         </Button>
         {done && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-emerald-600 text-sm">
-            <CheckCircle className="w-4 h-4" /> {sentCount} e-mail(s) enviado(s) com sucesso!
+            <CheckCircle className="w-4 h-4" /> {sentCount} e-mail(s) aceito(s) pelo provedor (entrega final não confirmada).
           </motion.div>
         )}
       </div>

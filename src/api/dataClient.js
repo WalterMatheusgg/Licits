@@ -349,6 +349,12 @@ const entities = new Proxy({}, { get(_, name) {
 }});
 export const dataClient = {
   finance: {
+    alerts: async () => {
+      const ctx = await context();
+      return unwrap(await supabase.from('contract_budget_alerts')
+        .select('id,contract_id,threshold_percent,amount_used,budget_total,status,attempts,created_at,sent_at,last_error')
+        .eq('organization_id',ctx.org).order('created_at',{ascending:false}).limit(100));
+    },
     preview: async (itemId, quantity) => {
       const ctx = await context();
       return unwrap(await supabase.rpc('preview_contract_purchase', {
