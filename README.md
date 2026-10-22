@@ -162,7 +162,7 @@ Os testes de banco sobem um ambiente **local descartável** e verificam migratio
 
 **Pronto para produção? Ainda não.** A execução agendada dos alertas **detectou ausência de `LICITS_DISPATCH_URL` e `LICITS_ALERT_DISPATCH_SECRET` nos GitHub Actions Secrets**; os e-mails externos não foram enviados. O pipeline agora falha visivelmente quando falta configuração, em vez de aparentar sucesso. Confira [alertas e configuração](docs/ALERTAS-FISCAL.md).
 
-**Pronto para produção? Ainda não.** É necessário homologar a autenticação e os fluxos reais, comprovar as integrações externas, configurar monitoração, backups recorrentes de banco **e arquivos** e realizar teste documentado de restauração.
+Antes do uso real, é necessário homologar a autenticação e os fluxos reais, comprovar as integrações externas, configurar monitoração, backups recorrentes de banco **e arquivos** e realizar teste documentado de restauração.
 
 - [Segurança e políticas](docs/SECURITY.md)
 - [Procedimentos de backup e recuperação](docs/PRODUCAO-RECUPERACAO.md)
