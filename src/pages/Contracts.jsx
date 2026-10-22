@@ -74,36 +74,58 @@ export default function Contracts() {
   });
 
   const createFromDocument = async (data) => {
-    if (!data.contract_number.trim() || !data.object.trim() || !data.supplier_name.trim()) {
+    const number = String(data.contract_number || '').trim();
+    const object = String(data.object || '').trim();
+    const supplier = String(data.supplier_name || '').trim();
+    if (!number || !object || !supplier) {
       throw new Error('Preencha número, objeto e fornecedor antes de salvar.');
     }
-    const document = await dataClient.entities.Document.create({
-      title: data.original_filename || 'Contrato importado',
-      document_type: 'contrato',
-      storage_bucket: data.storage_bucket,
-      storage_path: data.storage_path,
-      original_filename: data.original_filename,
-      mime_type: data.type,
-      file_size: data.size,
-      status: 'pendente',
-    });
+    const existing = await dataClient.entities.Contract.filter({ contract_number: number });
+    if (existing.length) {
+      throw new Error('Já existe um contrato com este número. Abra o contrato existente antes de importar o documento.');
+    }
+
+    // A criação do registro principal ocorre primeiro. A importação de anexos e
+    // itens continua sendo um fluxo multi-etapa, não uma transação atômica.
     const created = await dataClient.entities.Contract.create({
       ...data,
-      source_document_id: document.id,
+      contract_number: number,
+      object,
+      supplier_name: supplier,
+      source_document_id: null,
     });
-    const items = (data.items || []).filter(item => item.description && item.quantity > 0 && item.unit_price > 0);
-    await Promise.all(items.map(item => dataClient.entities.ContractItem.create({
-      contract_id: created.id,
-      item_number: item.item_number,
-      description: item.description,
-      unit: item.unit,
-      contracted_qty: item.quantity,
-      unit_price: item.unit_price,
-    })));
-    await dataClient.entities.Document.update(document.id, { contract_id: created.id });
+    try {
+      const document = await dataClient.entities.Document.create({
+        contract_id: created.id,
+        title: data.original_filename || 'Contrato importado',
+        document_type: 'contrato',
+        storage_bucket: data.storage_bucket,
+        storage_path: data.storage_path,
+        original_filename: data.original_filename,
+        mime_type: data.mime_type,
+        file_size: data.file_size,
+        status: 'pendente',
+      });
+      await dataClient.entities.Contract.update(created.id, { source_document_id: document.id });
+      const items = (data.items || []).filter(item => item.description && item.quantity > 0 && item.unit_price > 0);
+      for (const item of items) {
+        await dataClient.entities.ContractItem.create({
+          contract_id: created.id,
+          item_number: item.item_number,
+          description: item.description,
+          unit: item.unit,
+          contracted_qty: item.quantity,
+          unit_price: item.unit_price,
+        });
+      }
+    } catch (error) {
+      await queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      setShowAI(false);
+      throw new Error('Contrato ' + number + ' criado (ID ' + created.id + '), mas a importação do documento ou dos itens falhou: ' + error.message + '. Abra o contrato existente para completar o cadastro; não importe novamente.');
+    }
     await queryClient.invalidateQueries({ queryKey: ['contracts'] });
     setShowAI(false);
-    logAudit('cadastro', 'Contract', created.id, `Contrato ${created.contract_number} importado de documento`);
+    logAudit('cadastro', 'Contract', created.id, 'Contrato ' + created.contract_number + ' importado de documento');
   };
 
   const deleteMutation = useMutation({
