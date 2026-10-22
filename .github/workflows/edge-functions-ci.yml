@@ -31,3 +31,4 @@ jobs:
           deno check supabase/functions/analyze-contract/index.ts
           deno check supabase/functions/extract-document/index.ts
           deno check supabase/functions/dispatch-budget-alerts/index.ts
+          deno check supabase/functions/integration-contracts/index.ts
