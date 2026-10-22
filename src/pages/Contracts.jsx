@@ -74,61 +74,14 @@ export default function Contracts() {
   });
 
   const createFromDocument = async (data) => {
-    const number = String(data.contract_number || '').trim();
-    const object = String(data.object || '').trim();
-    const supplier = String(data.supplier_name || '').trim();
-    if (!number || !object || !supplier) {
-      throw new Error('Preencha número, objeto e fornecedor antes de salvar.');
-    }
-    const existing = await dataClient.entities.Contract.filter({ contract_number: number });
-    if (existing.length) {
-      throw new Error('Já existe um contrato com este número. Abra o contrato existente antes de importar o documento.');
-    }
-
-    // A criação do registro principal ocorre primeiro. A importação de anexos e
-    // itens continua sendo um fluxo multi-etapa, não uma transação atômica.
-    const created = await dataClient.entities.Contract.create({
-      ...data,
-      contract_number: number,
-      object,
-      supplier_name: supplier,
-      source_document_id: null,
-    });
-    try {
-      const document = await dataClient.entities.Document.create({
-        contract_id: created.id,
-        title: data.original_filename || 'Contrato importado',
-        document_type: 'contrato',
-        storage_bucket: data.storage_bucket,
-        storage_path: data.storage_path,
-        original_filename: data.original_filename,
-        mime_type: data.mime_type,
-        file_size: data.file_size,
-        status: 'pendente',
-      });
-      await dataClient.entities.Contract.update(created.id, { source_document_id: document.id });
-      const items = (data.items || []).filter(item => item.description && item.quantity > 0 && item.unit_price > 0);
-      for (const item of items) {
-        await dataClient.entities.ContractItem.create({
-          contract_id: created.id,
-          item_number: item.item_number,
-          description: item.description,
-          unit: item.unit,
-          contracted_qty: item.quantity,
-          unit_price: item.unit_price,
-        });
-      }
-    } catch (error) {
-      await queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      setShowAI(false);
-      throw new Error('Contrato ' + number + ' criado (ID ' + created.id + '), mas a importação do documento ou dos itens falhou: ' + error.message + '. Abra o contrato existente para completar o cadastro; não importe novamente.');
-    }
+    const result = await dataClient.documents.importContract(data);
     await queryClient.invalidateQueries({ queryKey: ['contracts'] });
     setShowAI(false);
-    logAudit('cadastro', 'Contract', created.id, 'Contrato ' + created.contract_number + ' importado de documento');
+    setSaveError('');
+    return result;
   };
 
-  const deleteMutation = useMutation({
+    const deleteMutation = useMutation({
     mutationFn: (id) => dataClient.entities.Contract.delete(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
@@ -163,7 +116,7 @@ export default function Contracts() {
             </Button>
           </Link>
         )}
-        <Dialog open={showAI} onOpenChange={setShowAI}>
+        {isAdmin && <Dialog open={showAI} onOpenChange={setShowAI}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Sparkles className="w-4 h-4" /> Importar Documento
@@ -173,8 +126,8 @@ export default function Contracts() {
               <DialogHeader><DialogTitle>Importar documento e cadastrar dados</DialogTitle></DialogHeader>
               <ContractAIUpload onSave={createFromDocument} isLoading={createMutation.isPending} />
             </DialogContent>
-          </Dialog>
-          <DropdownMenu>
+          </Dialog>}
+          {isAdmin && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2"><Plus className="w-4 h-4" /> Novo <ChevronDown className="w-4 h-4" /></Button>
             </DropdownMenuTrigger>
@@ -188,13 +141,13 @@ export default function Contracts() {
                 </RouterLink>
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
-          <Dialog open={showForm} onOpenChange={setShowForm}>
+          </DropdownMenu>}
+          {isAdmin && <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Cadastrar Contrato</DialogTitle></DialogHeader>
               <ContractForm onSave={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </div>
       </div>
 
