@@ -20,7 +20,7 @@ jobs:
           deno-version: v2.x
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
       - name: Install shared package dependencies
         run: npm ci --no-audit --no-fund
