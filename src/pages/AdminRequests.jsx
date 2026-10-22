@@ -13,19 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquarePlus, Clock, CheckCircle2, XCircle, Loader2, Inbox } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { logAudit } from '@/lib/audit';
-
-const ENTITY_MAP = {
-  'contrato': 'Contract',
-  'fiscalização': 'FiscalRecord',
-  'fiscalizacao': 'FiscalRecord',
-  'documento': 'Document',
-  'ocorrência': 'Occurrence',
-  'ocorrencia': 'Occurrence',
-  'item': 'ContractItem',
-  'registro de preços': 'PriceRegistration',
-  'price registration': 'PriceRegistration',
-};
 
 const statusColors = {
   pendente: 'bg-amber-500/10 text-amber-600',
@@ -50,7 +37,7 @@ export default function AdminRequests() {
   const queryClient = useQueryClient();
 
   useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
+  const isAdmin = currentUser?.role === 'admin';
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['admin-requests'],
@@ -70,29 +57,7 @@ export default function AdminRequests() {
   });
 
   const respondMutation = useMutation({
-    mutationFn: async ({ request, status }) => {
-      // If approving a deletion request, delete the associated entity first
-      if (status === 'aprovado' && request.request_type === 'exclusao' && request.entity_id) {
-        const entityName = ENTITY_MAP[request.entity_type?.toLowerCase()] || request.entity_type;
-        if (entityName && dataClient.entities[entityName]) {
-          try {
-            await dataClient.entities[entityName].delete(request.entity_id);
-            logAudit('exclusao', entityName, request.entity_id, `Excluído via solicitação: ${request.entity_label || request.entity_id}`);
-          } catch (e) {
-            throw new Error('Não foi possível arquivar o registro solicitado: ' + e.message);
-          }
-        } else {
-          throw new Error('Tipo de registro não suportado para exclusão automática.');
-        }
-      }
-      // Then update the request status
-      return dataClient.entities.AdminRequest.update(request.id, {
-        status,
-        admin_response: responseText,
-        resolved_by: currentUser?.id,
-        resolved_at: new Date().toISOString(),
-      });
-    },
+    mutationFn: ({ request, status }) => dataClient.admin.resolveRequest(request.id, status, responseText),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-requests'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
