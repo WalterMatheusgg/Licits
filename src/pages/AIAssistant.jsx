@@ -34,43 +34,11 @@ export default function AIAssistant() {
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setLoading(true);
 
-    const contractContext = contracts.slice(0, 100).map(c => ({
-      numero: c.contract_number,
-      objeto: c.object,
-      empresa: c.supplier_name,
-      cnpj: c.supplier_cnpj,
-      status: c.status,
-      estado: c.supplier_state,
-      vigencia_fim: c.end_date,
-      valor_total: c.total_value,
-      valor_usado: c.used_value,
-      fiscal: c.fiscal_status,
-      prorrogacao: c.can_extend,
-      prorrogacoes: c.extensions_done,
-    }));
-
     try {
-    const local = fiscalAnswer(userMsg, contracts);
-    if (local) {
-      setMessages(prev => [...prev, {role: 'assistant', content: local}]);
-      return;
-    }
-    const response = await dataClient.integrations.Core.InvokeLLM({
-      prompt: `Você é o assistente IA do sistema NexoFiscal - gestão inteligente de contratos. 
-Responda de forma clara, objetiva e em português brasileiro. Não invente contratos nem valores. Identifique claramente dados ausentes. Para consultas sobre saldo e risco, calcule sobre os registros informados; não afirme que a lista é exaustiva se houver mais registros que o limite. Nunca autorize gastos ou altere contratos.
-Use dados reais dos contratos quando disponíveis.
-
-Contratos cadastrados no sistema:
-${JSON.stringify(contractContext, null, 2)}
-
-Data atual: ${new Date().toISOString().split('T')[0]}
-
-Pergunta do usuário: ${userMsg}`,
-    });
-
-    setMessages(prev => [...prev, { role: 'assistant', content: typeof response === 'string' ? response : JSON.stringify(response) }]);
+      const answer = fiscalAnswer(userMsg, contracts);
+      setMessages(prev => [...prev, { role: 'assistant', content: answer || 'Posso consultar contratos cadastrados, saldo, percentual utilizado, vencimentos, riscos de teto e fiscalização. Tente informar o número de um contrato ou pergunte: quais contratos estão próximos de 80% de utilização? Não utilizo API externa.' }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Não foi possível consultar a IA externa. Você ainda pode perguntar sobre saldo, risco de teto, vencimentos, fiscalização ou o número de um contrato. Detalhes: ' + error.message }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Não consegui analisar os contratos carregados: ' + error.message }]);
     } finally {
       setLoading(false);
     }
@@ -89,7 +57,7 @@ Pergunta do usuário: ${userMsg}`,
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-primary" /> Assistente IA
         </h1>
-        <p className="text-sm text-muted-foreground">Pergunte sobre contratos, saldos, vencimentos e mais</p>
+        <p className="text-sm text-muted-foreground">Consultas locais aos registros autorizados. Sem API externa, sem envio de dados a modelos de terceiros.</p>
       </motion.div>
 
       <Card className="border-0 shadow-sm flex flex-col h-[calc(100vh-220px)]">
