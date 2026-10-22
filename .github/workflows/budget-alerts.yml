@@ -1,0 +1,25 @@
+name: Licits - Enviar alertas orcamentarios
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enviar fila de alertas ao fiscal
+        env:
+          DISPATCH_URL: ${{ secrets.LICITS_DISPATCH_URL }}
+          DISPATCH_TOKEN: ${{ secrets.LICITS_ALERT_DISPATCH_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${DISPATCH_URL}" || -z "${DISPATCH_TOKEN}" ]]; then
+            echo "::warning::Configurar secrets LICITS_DISPATCH_URL e LICITS_ALERT_DISPATCH_SECRET"
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 90 --retry 2 \
+            --header "x-alert-token: ${DISPATCH_TOKEN}" \
+            --request POST "${DISPATCH_URL}"
