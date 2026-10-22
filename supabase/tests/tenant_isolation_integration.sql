@@ -21,10 +21,10 @@ values
  ('c1111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Supplier A','11111111-1111-4111-8111-111111111111'),
  ('c2222222-2222-4222-8222-222222222222','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','Supplier B','22222222-2222-4222-8222-222222222222');
 
-insert into public.contracts(id,organization_id,supplier_id,contract_number,object,created_by)
+insert into public.contracts(id,organization_id,supplier_id,contract_number,object,created_by,status,total_value)
 values('d1111111-1111-4111-8111-111111111111',
  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','c1111111-1111-4111-8111-111111111111',
- 'CI-CONTRACT-A','Contract A Test','11111111-1111-4111-8111-111111111111');
+ 'CI-CONTRACT-A','Contract A Test','11111111-1111-4111-8111-111111111111','ativo',1000);
 
 insert into public.price_registrations(id,organization_id,auction_number,object,created_by)
 values('e1111111-1111-4111-8111-111111111111',
@@ -37,10 +37,10 @@ values('e2222222-2222-4222-8222-222222222222',
  '11111111-1111-4111-8111-111111111111');
 
 insert into public.contract_items(
-  id,organization_id,contract_id,description,contracted_qty,created_by)
+  id,organization_id,contract_id,description,contracted_qty,created_by,unit_price)
 values('f1111111-1111-4111-8111-111111111111',
  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','d1111111-1111-4111-8111-111111111111',
- 'Contract stock',10,'11111111-1111-4111-8111-111111111111');
+ 'Contract stock',10,'11111111-1111-4111-8111-111111111111',100);
 
 insert into public.contract_items(
   id,organization_id,price_registration_group_id,description,contracted_qty,created_by)
@@ -106,7 +106,7 @@ begin
   perform public.register_item_withdrawal('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
    'f1111111-1111-4111-8111-111111111111',999,'OS-OVER');
  exception when others then
-   if sqlerrm like '%exceeds available balance%' then rejected := true; end if;
+   if sqlerrm like '%excede o saldo%' then rejected := true; end if;
  end;
  if not rejected then raise exception 'Overconsumption not rejected'; end if;
 end;
