@@ -197,12 +197,13 @@ export default function ContractItemsTab({ contractId, contract }) {
 
       <Tabs defaultValue="inventory">
         <TabsList>
-          <TabsTrigger value="inventory">Estoque</TabsTrigger>
+          <TabsTrigger value="inventory">Saldo contratado</TabsTrigger>
           <TabsTrigger value="history">Registros de Baixa ({allWithdrawals.length})</TabsTrigger>
         </TabsList>
 
         {/* ESTOQUE TAB */}
         <TabsContent value="inventory" className="mt-4">
+          <p className="text-xs text-muted-foreground mb-3">Este saldo representa a quantidade ainda disponível no contrato, não o estoque físico no almoxarifado. Cada pedido registrado reduz o saldo contratual e atualiza o orçamento.</p>
           <div className="flex gap-2 mb-3">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -268,11 +269,11 @@ export default function ContractItemsTab({ contractId, contract }) {
                         <Dialog open={showConsume?.id === item.id} onOpenChange={(open) => { if(!open){setShowConsume(null);setConsumeForm({os_number:'',withdrawal_date:new Date().toISOString().split('T')[0],quantity:'',notes:''})} }}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" onClick={() => setShowConsume(item)} disabled={isCritical} className="gap-1.5 text-xs h-7">
-                              <Minus className="w-3 h-3" /> Baixar
+                              <Minus className="w-3 h-3" /> Registrar compra
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-sm">
-                            <DialogHeader><DialogTitle>Registrar Baixa</DialogTitle></DialogHeader>
+                            <DialogHeader><DialogTitle>Registrar aquisição / utilização contratual</DialogTitle></DialogHeader>
                             <div className="space-y-3">
                               <div className="p-3 bg-muted rounded-lg">
                                 <p className="text-sm font-medium">{item.description}</p>
@@ -298,7 +299,7 @@ export default function ContractItemsTab({ contractId, contract }) {
                               )}
                               <div><Label>Observações</Label><Input value={consumeForm.notes} onChange={e => setConsumeForm(p=>({...p,notes:e.target.value}))} placeholder="Opcional" /></div>
                               <Button onClick={() => consumeMutation.mutate({ item, cf: consumeForm })} disabled={!consumeForm.quantity || parseFloat(consumeForm.quantity)<=0 || parseFloat(consumeForm.quantity)>available || consumeMutation.isPending || ((showConsume?.contract_id && !showConsume?.price_registration_group_id) && (!purchasePreview?.permitted || previewLoading))} className="w-full">
-                                Confirmar Baixa
+                                Confirmar registro
                               </Button>
                             </div>
                           </DialogContent>
