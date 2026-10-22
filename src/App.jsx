@@ -10,6 +10,7 @@ import OrganizationGate from '@/components/auth/OrganizationGate';
 import RequirePermission from '@/components/auth/RequirePermission';
 import PageNotFound from '@/lib/PageNotFound';
 import LoadingScreen from '@/components/auth/LoadingScreen';
+import AppErrorBoundary from '@/components/common/AppErrorBoundary';
 
 import AppLayout from '@/components/layout/AppLayout';
 const Login = lazy(() => import('@/pages/auth/Login'));
@@ -77,9 +78,11 @@ function App() {
       <Router>
         <AuthProvider>
           <OrganizationProvider>
-            <Suspense fallback={<LoadingScreen message="Carregando módulo do Licits..." />}>
-              <AppRoutes />
-            </Suspense>
+            <AppErrorBoundary>
+              <Suspense fallback={<LoadingScreen message="Carregando módulo do Licits..." />}>
+                <AppRoutes />
+              </Suspense>
+            </AppErrorBoundary>
             <Toaster />
           </OrganizationProvider>
         </AuthProvider>
