@@ -1,0 +1,26 @@
+name: Licits - Homologacao remota somente leitura
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: licits-remote-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar conectividade, Auth e vazamentos anonimos RLS
+        env:
+          LICITS_SMOKE_SUPABASE_URL: ${{ secrets.LICITS_SMOKE_SUPABASE_URL }}
+          LICITS_SMOKE_PUBLISHABLE_KEY: ${{ secrets.LICITS_SMOKE_PUBLISHABLE_KEY }}
+        run: node scripts/verify-remote-supabase.mjs
