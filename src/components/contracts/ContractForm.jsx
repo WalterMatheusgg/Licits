@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { dataClient } from '@/api/dataClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,10 +53,15 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
     contract_number: '', sei_number: '', auction_number: '', object: '', modality: '', contract_type: '', status: 'em_analise',
     supplier_name: '', supplier_cnpj: '', supplier_address: '', supplier_city: '',
     supplier_state: '', supplier_cep: '', supplier_phone: '', supplier_email: '', supplier_contact: '',
-    responsible_sector: '', start_date: '', end_date: '', total_value: 0, notes: '',
+    responsible_sector: '', fiscal_user_id: null, start_date: '', end_date: '', total_value: 0, notes: '',
     can_extend: 'analise_pendente', max_extensions: 5, extensions_done: 0
   });
   const [errors, setErrors] = useState({});
+  const { data: members = [] } = useQuery({
+    queryKey: ['fiscal-candidates'],
+    queryFn: () => dataClient.entities.User.list(),
+  });
+  const fiscals = members.filter(m => m.status === 'ativo' && ['admin','gestor'].includes(m.role));
 
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -94,6 +101,19 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><Label>Nº do Pregão Eletrônico</Label><Input value={form.auction_number} onChange={e => update('auction_number', e.target.value)} placeholder="Ex: 001/2024" /></div>
           <div><Label>Setor Responsável</Label><Input value={form.responsible_sector} onChange={e => update('responsible_sector', e.target.value)} /></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Fiscal responsável pelos alertas</Label>
+            <Select value={form.fiscal_user_id || 'none'} onValueChange={v => update('fiscal_user_id', v === 'none' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione um fiscal da organização" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem fiscal atribuído (alertas aos administradores)</SelectItem>
+                {fiscals.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name || m.email} ({m.role})</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">O fiscal receberá os avisos orçamentários nos marcos de 80%, 90% e 100%.</p>
+          </div>
         </div>
         <div><Label>Objeto *</Label><Textarea value={form.object} onChange={e => update('object', e.target.value)} required />{err('object')}</div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

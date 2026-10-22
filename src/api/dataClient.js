@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
  * Data is never fabricated if Supabase is unavailable.
  */
 const definitions = {
-  Contract: { table: 'contracts', columns: 'supplier_id contract_number sei_number auction_number object modality contract_type status responsible_sector start_date end_date total_value used_value can_extend extensions_done max_extensions fiscal_status source_document_id ai_summary ai_risks clauses notes', soft: true, supplier: true },
+  Contract: { table: 'contracts', columns: 'supplier_id contract_number fiscal_user_id sei_number auction_number object modality contract_type status responsible_sector start_date end_date total_value used_value can_extend extensions_done max_extensions fiscal_status source_document_id ai_summary ai_risks clauses notes', soft: true, supplier: true },
   ContractItem: { table: 'contract_items', columns: 'contract_id price_registration_group_id group_number item_number description unit contracted_qty minimum_qty used_qty unit_price', soft: true },
   ItemWithdrawal: { table: 'item_withdrawals', columns: 'contract_id price_registration_group_id contract_item_id service_order_number withdrawal_date quantity notes user_id' },
   Document: { table: 'documents', columns: 'contract_id title document_type storage_bucket storage_path original_filename mime_type file_size checksum status version signed_by signed_at notes', soft: true },
@@ -348,6 +348,16 @@ const entities = new Proxy({}, { get(_, name) {
   };
 }});
 export const dataClient = {
+  finance: {
+    preview: async (itemId, quantity) => {
+      const ctx = await context();
+      return unwrap(await supabase.rpc('preview_contract_purchase', {
+        p_organization_id: ctx.org,
+        p_contract_item_id: itemId,
+        p_quantity: Number(quantity),
+      }));
+    }
+  },
   auth: { me: currentUser },
   entities,
   users: {

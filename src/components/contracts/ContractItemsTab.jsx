@@ -43,6 +43,13 @@ export default function ContractItemsTab({ contractId, contract }) {
 
   useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
   const isAdmin = currentUser?.role === 'admin';
+  const previewQty = Number(consumeForm.quantity);
+  const { data: purchasePreview, error: previewError, isFetching: previewLoading } = useQuery({
+    queryKey: ['purchase-preview',showConsume?.id,previewQty],
+    queryFn: () => dataClient.finance.preview(showConsume.id,previewQty),
+    enabled: !!showConsume?.id && Number.isFinite(previewQty) && previewQty > 0 && !!showConsume?.contract_id,
+    retry: false,
+  });
 
   const { data: items = [] } = useQuery({
     queryKey: ['contract-items', contractId],
@@ -85,9 +92,13 @@ export default function ContractItemsTab({ contractId, contract }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contract-items', contractId] });
       queryClient.invalidateQueries({ queryKey: ['withdrawals', contractId] });
+      queryClient.invalidateQueries({ queryKey: ['contract', contractId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-all'] });
       setShowConsume(null);
       setConsumeForm({ os_number: '', withdrawal_date: new Date().toISOString().split('T')[0], quantity: '', notes: '' });
-    }
+    },
+    onError: (error) => window.alert('Compra não registrada: ' + error.message),
   });
 
   const adjustMutation = useMutation({
@@ -270,8 +281,23 @@ export default function ContractItemsTab({ contractId, contract }) {
                               <div><Label>Nº da O.S. / Ordem de Serviço</Label><Input value={consumeForm.os_number} onChange={e => setConsumeForm(p=>({...p,os_number:e.target.value}))} placeholder="Ex: OS-001/2025" /></div>
                               <div><Label>Data da Baixa *</Label><Input type="date" value={consumeForm.withdrawal_date} onChange={e => setConsumeForm(p=>({...p,withdrawal_date:e.target.value}))} required /></div>
                               <div><Label>Quantidade *</Label><Input type="number" min="0.01" step="0.01" max={available} value={consumeForm.quantity} onChange={e => setConsumeForm(p=>({...p,quantity:e.target.value}))} placeholder="0" autoFocus /></div>
+                              {showConsume?.contract_id && Number.isFinite(previewQty) && previewQty > 0 && (
+                                <div className={`rounded-lg border p-3 space-y-1 text-sm ${purchasePreview?.permitted ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50'}`}>
+                                  {previewLoading ? <p>Calculando impacto no orçamento…</p> :
+                                  previewError ? <p className="text-red-700">Prévia indisponível: {previewError.message}</p> :
+                                  purchasePreview ? <>
+                                    <p><strong>Esta compra:</strong> {fmtBRL(Number(purchasePreview.requested_amount))}</p>
+                                    <p><strong>Saldo atual:</strong> {fmtBRL(Number(purchasePreview.budget_available))}</p>
+                                    <p><strong>Utilização após registrar:</strong> {Number(purchasePreview.projected_percent).toFixed(1)}% do contrato</p>
+                                    <p className={purchasePreview.permitted ? 'text-emerald-700' : 'text-red-700'}>
+                                      {purchasePreview.permitted ? 'Dentro do orçamento e do estoque.' : purchasePreview.reason}
+                                    </p>
+                                    {purchasePreview.permitted && Number(purchasePreview.projected_percent)>=80 && <p className="font-semibold text-amber-700">Atenção: marco de 80%/90%/100% — aviso será colocado na fila de e-mails, caso cruze o marco.</p>}
+                                  </> : null}
+                                </div>
+                              )}
                               <div><Label>Observações</Label><Input value={consumeForm.notes} onChange={e => setConsumeForm(p=>({...p,notes:e.target.value}))} placeholder="Opcional" /></div>
-                              <Button onClick={() => consumeMutation.mutate({ item, cf: consumeForm })} disabled={!consumeForm.quantity || parseFloat(consumeForm.quantity)<=0 || parseFloat(consumeForm.quantity)>available || consumeMutation.isPending} className="w-full">
+                              <Button onClick={() => consumeMutation.mutate({ item, cf: consumeForm })} disabled={!consumeForm.quantity || parseFloat(consumeForm.quantity)<=0 || parseFloat(consumeForm.quantity)>available || consumeMutation.isPending || (showConsume?.contract_id && (!purchasePreview?.permitted || previewLoading))} className="w-full">
                                 Confirmar Baixa
                               </Button>
                             </div>

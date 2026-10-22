@@ -73,6 +73,8 @@ export default function ContractDetail() {
   const safeDate = (d) => { try { const dt = new Date(d); return isNaN(dt.getTime()) ? '—' : format(dt, 'dd/MM/yyyy'); } catch { return '—'; } };
   const daysLeft = contract.end_date ? (() => { try { return differenceInDays(new Date(contract.end_date), new Date()); } catch { return null; } })() : null;
   const usedPercent = contract.total_value ? ((contract.used_value || 0) / contract.total_value) * 100 : 0;
+  const availableBudget = Number(contract.total_value || 0) - Number(contract.used_value || 0);
+  const money = n => Number(n || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
   const statusColor = {
     ativo: 'text-emerald-600', vencido: 'text-red-600',
@@ -104,6 +106,15 @@ export default function ContractDetail() {
         </div>
       </div>
 
+      {usedPercent >= 80 && (
+        <Card className={`p-4 border-l-4 ${usedPercent >= 100 ? 'border-l-red-600 bg-red-50' : 'border-l-amber-500 bg-amber-50'}`}>
+          <div className="flex gap-2 items-start"><AlertTriangle className="w-5 h-5 shrink-0 text-amber-700"/>
+            <div><p className="font-semibold">Atenção ao teto orçamentário — {usedPercent.toFixed(1)}% utilizado</p>
+              <p className="text-sm">Já foram utilizados {money(contract.used_value)} de {money(contract.total_value)}. Saldo: <strong>{money(availableBudget)}</strong>. Verifique novas compras antes de autorizar.</p>
+            </div>
+          </div>
+        </Card>
+      )}
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 border-0 shadow-sm">
@@ -123,7 +134,7 @@ export default function ContractDetail() {
               <p className="text-xs text-muted-foreground">Valor / Saldo</p>
               <p className="text-sm font-semibold">{(contract.total_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
               <Progress value={Math.min(usedPercent, 100)} className="h-1.5 mt-1" />
-              <p className="text-[10px] text-muted-foreground mt-0.5">{usedPercent.toFixed(0)}% utilizado</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{usedPercent.toFixed(1)}% utilizado · Saldo: {money(availableBudget)}</p>
             </div>
           </div>
         </Card>
