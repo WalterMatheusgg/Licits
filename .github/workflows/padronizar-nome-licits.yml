@@ -79,7 +79,7 @@ jobs:
           print('Arquivos padronizados:',len(touched))
           print('\n'.join(touched))
           for name in names:
-              if name and not name.startswith('supabase/migrations/') and name != '.github/workflows/padronizar-nome-licits.yml':
+              if name and not name.startswith(('supabase/migrations/','.github/workflows/')):
                   path=Path(name)
                   if path.is_file():
                       try:
