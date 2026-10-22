@@ -49,7 +49,7 @@ export default function Users() {
       const result = await dataClient.users.inviteUser(inviteEmail, role);
       window.alert(result?.email_sent
         ? 'Convite registrado; solicitação de e-mail enviada ao Supabase. O acesso depende do aceite.'
-        : 'Convite pendente. Avise a pessoa já cadastrada para entrar no Licits e clicar em Aceitar convite.');
+        : 'Convite pendente. Avise a pessoa já cadastrada para entrar no NexoFiscal e clicar em Aceitar convite.');
       setShowInvite(false);
       setInviteEmail('');
       queryClient.invalidateQueries({ queryKey: ['users'] });
