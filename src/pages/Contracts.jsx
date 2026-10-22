@@ -34,7 +34,7 @@ const statusLabel = {
   em_analise_slic: 'Providências no SLIC', cancelado: 'Cancelado'
 };
 
-const fmtBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function Contracts() {
   const [searchParams] = useSearchParams();
@@ -43,6 +43,7 @@ export default function Contracts() {
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'contract' | 'price_registration'
   const [showForm, setShowForm] = useState(false);
   const [showAI, setShowAI] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
 
@@ -64,10 +65,12 @@ export default function Contracts() {
   const createMutation = useMutation({
     mutationFn: (data) => dataClient.entities.Contract.create(data),
     onSuccess: (created) => {
+      setSaveError('');
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       setShowForm(false); setShowAI(false);
       logAudit('cadastro', 'Contract', created.id, `Contrato ${created.contract_number} cadastrado`);
-    }
+    },
+    onError: (err) => setSaveError(err.message || 'Não foi possível cadastrar o contrato.')
   });
 
   const deleteMutation = useMutation({
@@ -108,11 +111,11 @@ export default function Contracts() {
         <Dialog open={showAI} onOpenChange={setShowAI}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <Sparkles className="w-4 h-4" /> Leitura IA
+                <Sparkles className="w-4 h-4" /> Importar Documento
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Leitura Inteligente de Contrato</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Importar documento e cadastrar dados</DialogTitle></DialogHeader>
               <ContractAIUpload onSave={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
             </DialogContent>
           </Dialog>
@@ -140,6 +143,7 @@ export default function Contracts() {
         </div>
       </div>
 
+      {saveError && <div role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">{saveError}</div>}
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
