@@ -42,7 +42,7 @@ begin
  if updated->>'id'<>contract_id::text or
    (select notes from public.contracts where id=contract_id)<>'Atualização auditada'
  then raise exception 'Contract update was not applied'; end if;
- if (select count(*) from public.audit_logs where entity_id=contract_id and entity_type='contract'
+ if (select count(*) from public.audit_logs where entity_id=contract_id and entity_type='contracts'
    and action in ('create','update'))<>2
  then raise exception 'Contract create/update was not audited'; end if;
  if not exists (select 1 from public.audit_logs where entity_id=contract_id and action='update'
@@ -73,7 +73,7 @@ begin
   'c1000000-0000-4000-8000-000000000001',credential_id
  );
  if (select count(*) from public.audit_logs where entity_id=credential_id
-   and entity_type='integration_credential')<>2
+   and entity_type='integration_credentials')<>2
  then raise exception 'Credential lifecycle was not audited'; end if;
  if has_table_privilege('authenticated','public.integration_credentials','SELECT')
  then raise exception 'Authenticated role can read integration credential hashes'; end if;
