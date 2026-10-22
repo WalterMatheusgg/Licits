@@ -15,7 +15,7 @@ import {
   Inbox, Brain, MapPin, Bell, Plus
 } from 'lucide-react';
 
-const fmtBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function StatCard({ title, value, subtitle, icon: Icon, color, delay, trend, link }) {
   const colorMap = {
@@ -35,9 +35,9 @@ function StatCard({ title, value, subtitle, icon: Icon, color, delay, trend, lin
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className={`text-xs font-medium uppercase tracking-wider ${c.sub} mb-1`}>{title}</p>
-          <p className={`text-lg sm:text-2xl lg:text-3xl font-extrabold ${c.text} break-words`}>{value}</p>
-          {subtitle && <p className={`text-xs mt-1 ${c.sub}`}>{subtitle}</p>}
+          <p className={`text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1`}>{title}</p>
+          <p className={`text-lg sm:text-2xl lg:text-3xl font-extrabold text-foreground break-words`}>{value}</p>
+          {subtitle && <p className={`text-xs mt-1 text-muted-foreground`}>{subtitle}</p>}
         </div>
         <div className="rounded-lg bg-muted p-2.5">
           <IconCmp className="w-5 h-5 text-muted-foreground" />
@@ -68,13 +68,13 @@ function QuickAction({ icon: IconEl, label, to, color }) {
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [expiringFilter, setExpiringFilter] = useState(() => {
-    const saved = localStorage.getItem('dashboard_expiringFilter');
-    return saved ? parseInt(saved) : 30;
+    const saved = Number(localStorage.getItem('dashboard_expiringFilter'));
+    return [30,60,90].includes(saved) ? saved : 30;
   });
 
   useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
-  const { data: contracts = [], isLoading: contractsLoading } = useQuery({ queryKey: ['contracts'], queryFn: () => dataClient.entities.Contract.list('-created_date'), initialData: [] });
+  const { data: contracts = [], isLoading: contractsLoading, isError: contractsError, error: contractsFailure } = useQuery({ queryKey: ['contracts'], queryFn: () => dataClient.entities.Contract.list('-created_date'), initialData: [] });
   const { data: priceGroups = [] } = useQuery({ queryKey: ['price-groups-all'], queryFn: () => dataClient.entities.PriceRegistrationGroup.list(), initialData: [] });
   const { data: notifications = [] } = useQuery({ queryKey: ['notifications-all'], queryFn: () => dataClient.entities.Notification.filter({ read: false }), initialData: [] });
   const { data: adminRequests = [] } = useQuery({ queryKey: ['admin-requests'], queryFn: () => dataClient.entities.AdminRequest.filter({ status: 'pendente' }), initialData: [] });
@@ -88,8 +88,8 @@ export default function Dashboard() {
   const expired = allItems.filter(c => c.status === 'vencido');
   const expiringInDays = (days) => allItems.filter(c => { if(!c.end_date) return false; const d = differenceInDays(new Date(c.end_date), new Date()); return d>=0 && d<=days && c.status==='ativo'; });
   const expiringFiltered = expiringInDays(expiringFilter).sort((a,b) => new Date(a.end_date) - new Date(b.end_date));
-  const totalValue = allItems.reduce((s,c)=>s+(c.total_value||0),0);
-  const usedValue = allItems.reduce((s,c)=>s+(c.used_value||0),0);
+  const totalValue = allItems.reduce((s,c)=>s+Number(c.total_value||0),0);
+  const usedValue = allItems.reduce((s,c)=>s+Number(c.used_value||0),0);
   const lowFiscal = contracts.filter(c => c.fiscal_status === 'baixa');
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
   const mine = contracts.filter(c => c.fiscal_user_id && c.fiscal_user_id === currentUser?.id);
@@ -99,6 +99,8 @@ export default function Dashboard() {
     setExpiringFilter(d);
     localStorage.setItem('dashboard_expiringFilter', String(d));
   };
+
+  if (contractsError) return <div role="alert" className="rounded-xl border p-5 text-destructive">Falha ao carregar contratos: {contractsFailure?.message}</div>;
 
   if (contractsLoading) {
     return <LoadingState message="Carregando painel..." />;
