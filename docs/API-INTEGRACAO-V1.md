@@ -127,7 +127,7 @@ A operação `ingest` aceita um payload JSON de integração com campos padroniz
 
 Envie via POST para a Edge Function `integration-contracts` com `Authorization: Bearer lct_...` e o header `apikey` publicável do projeto. A credencial deve possuir `contracts:write`. A criação é transacional; números repetidos com os mesmos dados retornam HTTP 200 (`already_exists:true`), e dados conflitantes retornam HTTP 409. O token deve ficar no cofre de segredos do integrador.
 
-A API controla até **60 chamadas por minuto por credencial**, com HTTP 429 quando o limite for excedido. O contador é persistido no PostgreSQL; a remoção periódica de contadores antigos ainda deve ser operacionalizada.
+A API controla até **60 chamadas por minuto por credencial**, com HTTP 429 quando o limite for excedido. O contador é persistido no PostgreSQL e cada chamada remove os registros antigos da própria credencial (mais de um dia).
 
 Este é um **endpoint de recebimento autenticado**, que pode ser chamado por automações externas. Ele não implementa assinaturas HMAC de webhooks específicos de fornecedores, webhooks de saída nem sincronização automática por polling. Para um ERP específico, é necessário mapear seus campos e validar seu protocolo. Os formatos JSON, datas e ações disponíveis estão no [OpenAPI](openapi-integration-v1.json).
 
