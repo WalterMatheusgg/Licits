@@ -27,6 +27,18 @@ A migração do **código-fonte do frontend** para Supabase foi realizada. A int
 > [!IMPORTANT]
 > **A compilação e as verificações estáticas não substituem testes com um Supabase real.** Para executar todas as funções é necessário configurar o projeto Supabase, aplicar as migrations, criar a primeira organização e fazer o deploy das Edge Functions. E-mail e IA também exigem serviços terceiros, credenciais privadas e validação específica. **Não está homologado para produção.**
 
+## Para o fiscal de contratos
+
+O Licits organiza o trabalho do fiscal em torno dos contratos **atribuídos a ele**, com valores, saldos, fornecedor, vigência, ocorrências, documentos e histórico de compras/utilizações.
+
+- **Minha carteira:** o painel mostra os contratos atribuídos e os principais riscos financeiros.
+- **Compra assistida:** antes de cada baixa, o sistema calcula preço, quantidade restante, saldo financeiro e projeção de consumo.
+- **Teto protegido no banco:** a operação é transacional, bloqueando despesas superiores à quantidade ou ao valor global contratado.
+- **Alertas de orçamento:** o banco registra avisos ao cruzar 80%, 90% e 100% do teto; uma fila controla as tentativas de envio por e-mail ao fiscal atribuído e aos administradores ativos.
+- **Teste com números reais de simulação:** [contrato fictício com R$ 100 mil e 50% de uso](docs/CONTRATO-DEMONSTRACAO.md).
+
+**E-mails externos exigem configuração:** Resend, Edge Function `dispatch-budget-alerts` e agendamento GitHub Actions. Confira [manual de alertas](docs/ALERTAS-FISCAL.md). A aplicação não garante e-mail entregue até que essa integração seja implantada e verificada.
+
 ## Funcionalidades implementadas no código
 
 | Módulo | Implementação |
@@ -174,6 +186,10 @@ O arquivo `scripts/backup-database.sh` gera dump PostgreSQL criptografado via ag
 - [ ] Validar migrations, autenticação, e CRUD no **projeto Supabase de homologação real**.
 - [ ] Implantar Edge Functions e verificar convites, e-mails e IA com provedores e segredos configurados.
 - [ ] Agendar backups reais de PostgreSQL **e Storage**, comprovar restauração e configurar monitoramento.
+- [x] Implementar projeção financeira e bloqueio atômico de compras acima do valor global.
+- [x] Criar fila deduplicada de alertas do teto e distribuição para fiscal/administradores.
+- [x] Preparar cenário de licitação fictícia iniciado com 50% utilizado.
+- [ ] Implantar no Supabase de homologação e comprovar o envio real de alertas com Resend.
 - [ ] Homologar UX ponta a ponta, segurança, custos, LGPD e plano de produção.
 
 **Leia:** [Autenticação](docs/AUTHENTICATION.md) · [Banco](docs/DATABASE.md) · [Segurança](docs/SECURITY.md) · [Migração anterior](docs/MIGRATION_PROGRESS.md)
