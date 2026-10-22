@@ -61,7 +61,7 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
     queryKey: ['fiscal-candidates'],
     queryFn: () => dataClient.entities.User.list(),
   });
-  const fiscals = members.filter(m => m.status === 'ativo' && ['admin','gestor'].includes(m.role));
+  const fiscals = members.filter(m => m.status === 'ativo' && ['admin','gestor','fiscal'].includes(m.role));
 
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
