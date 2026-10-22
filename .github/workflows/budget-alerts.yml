@@ -17,9 +17,21 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${DISPATCH_URL}" || -z "${DISPATCH_TOKEN}" ]]; then
-            echo "::warning::Configurar secrets LICITS_DISPATCH_URL e LICITS_ALERT_DISPATCH_SECRET"
-            exit 0
+            echo "::error::Faltam LICITS_DISPATCH_URL e LICITS_ALERT_DISPATCH_SECRET; nenhum alerta foi enviado."
+            exit 1
           fi
-          curl --fail-with-body --silent --show-error --max-time 90 --retry 2 \
+          RESPONSE=$(curl --fail-with-body --silent --show-error --max-time 90 --retry 2 \
             --header "x-alert-token: ${DISPATCH_TOKEN}" \
-            --request POST "${DISPATCH_URL}"
+            --request POST "${DISPATCH_URL}")
+          printf '%s' "$RESPONSE" | python3 -c '
+          import json,sys
+          try:
+              result=json.load(sys.stdin)
+              failed=int(result.get("failed",0))
+              print("Alertas processados:",int(result.get("processed",0)))
+              print("Solicitações de envio aceitas:",int(result.get("sent",0)))
+              print("Falhas:",failed)
+              if failed: sys.exit(1)
+          except (ValueError,TypeError,KeyError) as exc:
+              sys.exit("Resposta invalida do worker de e-mail: "+str(exc))
+          '
