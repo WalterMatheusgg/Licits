@@ -132,11 +132,16 @@ Deno.serve(async req => {
       });
       if (created.error?.code === '23505') {
         if (operation === 'ingest') {
-          const existing = await admin.from('contracts').select('id,contract_number')
+          const existing = await admin.from('contracts').select('id,contract_number,object,total_value,supplier:suppliers(legal_name,cnpj)')
             .eq('organization_id',organization_id).eq('contract_number',contract_number)
             .is('deleted_at',null).maybeSingle();
           if (existing.error) throw existing.error;
-          if (existing.data) return json({api_version:'v1',data:existing.data,already_exists:true});
+          if (existing.data && existing.data.object === object &&
+              Number(existing.data.total_value) === amount &&
+              existing.data.supplier?.legal_name === supplier_name &&
+              (existing.data.supplier?.cnpj || '') === cnpj) {
+            return json({api_version:'v1',data:{id:existing.data.id,contract_number},already_exists:true});
+          }
         }
         return json({error:'Contrato com este número já existe'},409);
       }
