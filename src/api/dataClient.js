@@ -26,7 +26,7 @@ const fail = (message) => { throw new Error(message); };
 const unwrap = (result) => { if (result.error) throw new Error(result.error.message); return result.data; };
 const safeText = (v) => v === '' || v === undefined ? null : v;
 const sanitizeCnpj = (s) => String(s || '').replace(/\D/g, '');
-const roleForUI = (role) => role === 'organization_admin' ? 'admin' : role === 'gestor' || role === 'fiscal' ? 'gestor' : 'operacional';
+const roleForUI = (role) => ({organization_admin:'admin',gestor:'gestor',fiscal:'fiscal',operacional:'operacional',visualizador:'visualizador'}[role] || 'operacional');
 const roleForDB = (role) => role === 'admin' ? 'organization_admin' : role === 'gestor' ? 'gestor' : role === 'operacional' ? 'operacional' : role;
 const statusForUI = (s) => s === 'active' ? 'ativo' : s === 'invited' ? 'convidado' : s === 'suspended' ? 'bloqueado' : 'inativo';
 const statusForDB = (s) => s === 'ativo' ? 'active' : s === 'bloqueado' ? 'suspended' : s === 'inativo' ? 'revoked' : s;
@@ -355,6 +355,37 @@ export const dataClient = {
       return unwrap(await supabase.rpc('resolve_admin_request', {
         p_request_id: requestId, p_status: status, p_response: response,
       }));
+    },
+  },
+  documents: {
+    importContract: async (data) => {
+      const ctx = await context();
+      if (!['organization_admin','gestor'].includes(ctx.role)) fail('Apenas administrador ou gestor pode cadastrar contratos.');
+      const result = await supabase.rpc('import_contract_document_atomic', {
+        p_organization_id: ctx.org,
+        p_contract: {
+          contract_number: String(data.contract_number || '').trim(),
+          object: String(data.object || '').trim(),
+          supplier_name: String(data.supplier_name || '').trim(),
+          supplier_cnpj: data.supplier_cnpj || null,
+          total_value: Number(data.total_value),
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
+          clauses: data.clauses || null,
+        },
+        p_storage_path: data.storage_path,
+        p_original_filename: data.original_filename || null,
+        p_mime_type: data.mime_type || null,
+        p_file_size: data.file_size || null,
+        p_items: (Array.isArray(data.items) ? data.items : []).map(item => ({
+          item_number: item.item_number,
+          description: item.description,
+          unit: item.unit,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        })),
+      });
+      return unwrap(result);
     },
   },
   finance: {
