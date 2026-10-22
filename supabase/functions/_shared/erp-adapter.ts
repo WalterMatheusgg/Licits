@@ -6,7 +6,10 @@ function object(value: unknown): Data {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Data : {};
 }
 function first(...values: unknown[]): string {
-  return values.find(value => typeof value === 'string' && value.trim())?.toString().trim() || '';
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
 }
 function parseAmount(value: unknown): number {
   if (typeof value === 'number') return value;
