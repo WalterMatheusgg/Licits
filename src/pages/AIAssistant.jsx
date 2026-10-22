@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Send, Sparkles, Loader2, User, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import { fiscalAnswer } from '@/lib/fiscalInsights';
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState([
@@ -49,8 +50,13 @@ export default function AIAssistant() {
     }));
 
     try {
+    const local = fiscalAnswer(userMsg, contracts);
+    if (local) {
+      setMessages(prev => [...prev, {role: 'assistant', content: local}]);
+      return;
+    }
     const response = await dataClient.integrations.Core.InvokeLLM({
-      prompt: `Você é o assistente IA do sistema Licits - gestão inteligente de contratos. 
+      prompt: `Você é o assistente IA do sistema NexoFiscal - gestão inteligente de contratos. 
 Responda de forma clara, objetiva e em português brasileiro. Não invente contratos nem valores. Identifique claramente dados ausentes. Para consultas sobre saldo e risco, calcule sobre os registros informados; não afirme que a lista é exaustiva se houver mais registros que o limite. Nunca autorize gastos ou altere contratos.
 Use dados reais dos contratos quando disponíveis.
 
@@ -64,7 +70,7 @@ Pergunta do usuário: ${userMsg}`,
 
     setMessages(prev => [...prev, { role: 'assistant', content: typeof response === 'string' ? response : JSON.stringify(response) }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Serviço de IA indisponível: ' + error.message }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Não foi possível consultar a IA externa. Você ainda pode perguntar sobre saldo, risco de teto, vencimentos, fiscalização ou o número de um contrato. Detalhes: ' + error.message }]);
     } finally {
       setLoading(false);
     }
