@@ -1,206 +1,315 @@
-
-> **Novo guia:** [Acesso ao NexoFiscal, configuração da IA e integrações externas](docs/GUIA-ACESSO-INTEGRACOES.md).
 <div align="center">
 
-# 📑 NEXOFISCAL
-### Gestão de contratos, fiscalização e registros de preços
+# 🛡️ NexoFiscal
 
-**React 18 · Vite 6 · Supabase Auth · PostgreSQL · Storage · RLS**
+### Gestão inteligente de contratos e fiscalização
 
-[![Frontend](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/ci.yml)
-[![Supabase SQL](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/supabase-db-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/supabase-db-ci.yml)
-[![Edge Functions](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/edge-functions-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/edge-functions-ci.yml)
-![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Homologa%C3%A7%C3%A3o%20externa%20pendente-F59E0B)
+**Uma central para acompanhar contratos, orçamento, prazos, documentos e ocorrências.**
 
-**Gestão contratual com organizações isoladas, rastreabilidade, fiscalização e documentos privados.**
+[![Frontend](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml)
+[![Banco Supabase](https://github.com/WalterMatheusgg/Licits/actions/workflows/supabase-db-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/supabase-db-ci.yml)
+[![Edge Functions](https://github.com/WalterMatheusgg/Licits/actions/workflows/edge-functions-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/edge-functions-ci.yml)
+
+**React 18 · Vite 6 · Supabase Auth · PostgreSQL · Tailwind CSS**
+
+> **Status: em desenvolvimento/homologação.** Recursos implementados no código não significam implantação ou validação no ambiente remoto.
 
 </div>
 
 ---
 
-## Sobre o projeto
+## Navegação rápida
 
-O **NexoFiscal** é uma aplicação web para acompanhamento de contratos, fornecedores, atas de registro de preços, fiscalização, ocorrências, documentos e permissões de uma organização.
+- [O que o projeto resolve](#o-que-o-projeto-resolve)
+- [Funcionalidades](#funcionalidades)
+- [Instalação e execução](#instalação-e-execução)
+- [Configuração do Supabase](#configuração-do-supabase)
+- [Inteligência documental e assistente](#inteligência-documental-e-assistente)
+- [Alertas por e-mail](#alertas-por-e-mail)
+- [API para outros sistemas](#api-para-outros-sistemas)
+- [Testes e produção](#testes-e-produção)
+- [Documentação](#documentação)
 
-A migração do **código-fonte do frontend** para Supabase foi realizada. A interface deixou de importar o SDK Base44; as operações de dados passaram por um gateway Supabase com filtragem por organização e políticas **Row Level Security** no PostgreSQL.
+## O que o projeto resolve
 
-> [!IMPORTANT]
-> **A compilação e as verificações estáticas não substituem testes com um Supabase real.** Para executar todas as funções é necessário configurar o projeto Supabase, aplicar as migrations, criar a primeira organização e fazer o deploy das Edge Functions. E-mail e IA também exigem serviços terceiros, credenciais privadas e validação específica. **Não está homologado para produção.**
+O **NexoFiscal** foi desenvolvido para apoiar fiscais de contratos e gestores na rotina de acompanhamento da execução contratual.
 
-## Para o fiscal de contratos
+| Dificuldade do fiscal | Como o NexoFiscal ajuda |
+| --- | --- |
+| Não saber quanto ainda pode gastar | Mostra valor contratado, utilizado e saldo disponível |
+| Ultrapassar o teto ou a quantidade de um item | Prévia de consumo e baixa controlada por função transacional no banco |
+| Perder o prazo de vigência | Painel de vencimentos e fila de alertas |
+| Ter ocorrências e comprovantes dispersos | Registros de fiscalização vinculados ao contrato |
+| Demorar para cadastrar um contrato | Cadastro manual e importação de PDF/imagem com revisão |
+| Precisar prestar contas das alterações | Histórico e auditoria no PostgreSQL |
+| Precisar integrar um ERP | API própria com autenticação, escopos e isolamento por organização |
 
-O NexoFiscal organiza o trabalho do fiscal em torno dos contratos **atribuídos a ele**, com valores, saldos, fornecedor, vigência, ocorrências, documentos e histórico de compras/utilizações.
+### Exemplo de uso
 
-- **Minha carteira:** o painel mostra os contratos atribuídos e os principais riscos financeiros.
-- **Compra assistida:** antes de cada baixa, o sistema calcula preço, quantidade restante, saldo financeiro e projeção de consumo.
-- **Teto protegido no banco:** a operação é transacional, bloqueando despesas superiores à quantidade ou ao valor global contratado.
-- **Alertas de orçamento:** o banco registra avisos ao cruzar 80%, 90% e 100% do teto; uma fila controla as tentativas de envio por e-mail ao fiscal atribuído e aos administradores ativos.
-- **Teste com números reais de simulação:** [contrato fictício com R$ 100 mil e 50% de uso](docs/CONTRATO-DEMONSTRACAO.md).
+Um contrato fictício tem **R$ 100.000,00 de valor total** e **R$ 50.000,00 já utilizados (50%)**. O fiscal pode consultar os R$ 50.000,00 restantes, simular o impacto de uma nova compra, acompanhar o consumo por item e receber avisos quando os marcos de **80%, 90% e 100%** forem atingidos. O banco deve rejeitar retiradas acima dos limites previstos.
 
-**E-mails externos exigem configuração:** Resend, Edge Function `dispatch-budget-alerts` e agendamento GitHub Actions. Confira [manual de alertas](docs/ALERTAS-FISCAL.md). A aplicação não garante e-mail entregue até que essa integração seja implantada e verificada.
+[Contrato fictício completo para testes](docs/CONTRATO-DEMONSTRACAO.md).
 
-## Funcionalidades implementadas no código
+> O sistema oferece apoio operacional; não substitui a análise administrativa, jurídica e documental realizada pelos responsáveis.
 
-| Módulo | Implementação |
-|:--|:--|
-| 🔐 **Login e conta** | Supabase Auth, recuperação de senha e proteção de rotas |
-| 🏢 **Organizações** | Contexto ativo, vínculo de usuários, papéis e políticas RLS |
-| 📑 **Contratos e fornecedores** | Cadastro, consulta, edição, filtros, exclusão lógica e fornecedor relacional |
-| 📦 **Itens de contrato** | Quantidades, acompanhamento de consumo e baixa atômica em função SQL |
-| 🧾 **Registros de preços** | Atas, grupos de fornecedores e acompanhamento de vigência |
-| 🛡️ **Fiscalização e ocorrências** | Registros vinculados aos contratos, histórico e anexos privados |
-| 📁 **Documentos** | Upload para bucket privado, metadados SQL e links temporários assinados |
-| 📊 **Dashboard e relatórios** | Telas, indicadores, filtros e gráficos alimentados pelas consultas Supabase |
-| 👥 **Administração** | Membros, papéis, solicitações e trilha automática de auditoria |
-| 🔔 **Notificações** | Leitura de avisos por organização; marcação de leitura de avisos individuais |
-| ✉️ **E-mails** | Edge Function autenticada usando Resend, após configuração |
-| ✨ **Inteligência documental** | PDF.js e Tesseract.js extraem texto localmente de PDFs e imagens; campos extraídos exigem revisão humana |
+## Funcionalidades
 
-## Arquitetura
+| Módulo | Recursos presentes no código |
+| --- | --- |
+| **Dashboard** | Indicadores, saldos, consumo e vencimentos |
+| **Contratos e fornecedores** | Cadastro, pesquisa, edição, itens e acompanhamento |
+| **Itens e compras** | Quantidade contratada/utilizada, movimentações e proteção transacional |
+| **Fiscalização** | Fila de tarefas, prioridades, prazos, registros, ocorrências e evidências |
+| **Atas de registro de preços** | Atas, fornecedores, grupos e itens |
+| **Documentos** | Armazenamento privado, PDF, OCR e revisão antes do cadastro |
+| **Assistente fiscal** | Consultas estruturadas sobre contratos, riscos, saldo e vencimentos |
+| **Mapa** | Visualização aproximada por estado (UF), não por endereço exato |
+| **Administração** | Organizações, usuários, permissões e solicitações |
+| **Auditoria** | Registro de alterações relevantes no banco |
+| **Alertas** | Filas orçamentárias e de vencimento; e-mails após configuração do Resend |
+| **Integrações** | API própria para consultar, criar, atualizar e receber contratos externos |
 
-~~~mermaid
-flowchart TD
-    UI["React 18 · Vite · Tailwind CSS"] --> AUTH["Supabase Auth"]
-    UI --> GATE["Gateway de dados por organização"]
-    GATE --> DB[("PostgreSQL + Row Level Security")]
-    GATE --> STORAGE["Storage privado · URLs assinadas"]
-    GATE --> RPC["RPC transacional de baixa de itens"]
-    UI --> EDGE["Edge Functions com autorização"]
-    EDGE --> EMAIL["Resend · opcional"]
-    EDGE --> IA["OpenAI · perguntas ao assistente"]
-~~~
+A aplicação usa **Supabase Auth** e políticas **Row Level Security (RLS)** para limitar os dados por organização e papel de usuário.
 
-- **Frontend:** React Router, TanStack Query, React Hook Form, Tailwind, Radix UI, Recharts.
-- **Dados e segurança:** Supabase, PostgreSQL, migrations SQL, autorização no banco, controle de acesso por organização e auditoria em triggers.
-- **Funções de servidor:** convite de membros, e-mail, análise assistida e extração documental. Credenciais privadas permanecem no ambiente Edge.
+## Instalação e execução
 
-## Executar localmente
+### Requisitos
 
-### 1. Instalação
+**Node.js 22**, npm, acesso ao repositório privado e um projeto Supabase de desenvolvimento ou homologação.
 
-Requisitos: Node.js 20 ou superior, npm, conta/projeto Supabase para desenvolvimento e Supabase CLI para banco e funções.
+### Novo clone
 
 ~~~bash
-git clone https://github.com/WalterMatheusgg/NexoFiscal.git
-cd NexoFiscal
+git clone https://github.com/WalterMatheusgg/Licits.git
+cd Licits
 npm ci
 cp .env.example .env.local
 ~~~
 
-Preencha **apenas configurações públicas** no arquivo .env.local:
+Se já estiver no **GitHub Codespaces**, dentro de **/workspaces/Licits**:
+
+~~~bash
+git pull origin main
+npm ci
+cp -n .env.example .env.local
+~~~
+
+Revise as variáveis públicas do arquivo **.env.local**:
 
 ~~~dotenv
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
+VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICAVEL
+VITE_ENVIRONMENT=development
 ~~~
 
-> [!CAUTION]
-> Nunca adicione a arquivos **VITE_** credenciais administrativas, service role, senha de banco, chaves do Resend ou OpenAI. Variáveis VITE_ são acessíveis ao navegador.
-
-### 2. Banco de dados
-
-Use um projeto Supabase de **desenvolvimento** e confira todas as migrations antes de executar:
+Para iniciar:
 
 ~~~bash
-npx supabase@latest login
-npx supabase@latest link --project-ref SEU_PROJECT_REF
-npx supabase@latest db push --dry-run --linked
-npx supabase@latest db push --linked
+npm run dev -- --host 0.0.0.0
 ~~~
 
-As migrations estão em **supabase/migrations**. Incluem constraints, RLS, buckets privados, auditoria, controle de consumo e metadados dos anexos.
+- **No computador:** normalmente http://localhost:5173.
+- **No Codespaces:** abra **Ports**, localize a porta **5173** e abra o link fornecido.
 
-**Primeiro usuário:** crie a conta no painel Supabase e associe-a a uma organização com papel organization_admin em uma sessão SQL administrativa. Siga exatamente [a documentação de autenticação](docs/AUTHENTICATION.md).
+> **Segurança:** qualquer variável com prefixo **VITE_** pode ficar visível no navegador. Nunca coloque senhas, token administrativo do Supabase, chaves secretas do Resend ou credenciais de serviços no frontend.
 
-### 3. Funções de servidor
+## Configuração do Supabase
+
+### 1. Autenticar a CLI
 
 ~~~bash
-npx supabase@latest functions deploy invite-member
-npx supabase@latest functions deploy send-email
-npx supabase@latest functions deploy analyze-contract
-npx supabase@latest functions deploy extract-document
+npx supabase login
 ~~~
 
-Configure segredos **somente no Supabase**: RESEND_API_KEY, RESEND_FROM_EMAIL e OPENAI_API_KEY para perguntas ao assistente. A extração de documentos não precisa de chave externa. É necessário um endereço/domínio remetente verificado para enviar e-mails.
-
-- [Documentação das Edge Functions](docs/EDGE-FUNCTIONS.md)
-- [Extração de documentos com IA](docs/DOCUMENT-AI.md)
-- A extração documental roda localmente no navegador; perguntas ao assistente podem enviar o prompt à OpenAI após ação do usuário.
-
-### 4. Iniciar
+Conclua o processo de autenticação e vincule o projeto Supabase apropriado:
 
 ~~~bash
-npm run dev
+npx supabase link --project-ref SEU_PROJECT_REF
+npx supabase migration list
+npx supabase db push --dry-run
 ~~~
 
-Acesse o endereço do Vite exibido no terminal, geralmente **http://localhost:5173**.
+O **dry-run** mostra as migrações pendentes sem aplicá-las.
 
-## Verificar qualidade
+**Se aparecer o erro:**
+
+~~~text
+Access token not provided. Supply an access token by running supabase login.
+~~~
+
+A CLI não está autenticada neste terminal/Codespaces. Execute **npx supabase login** e repita os comandos. **Não compartilhe o token no chat ou no repositório.**
+
+### 2. Aplicar migrations
+
+**Depois de revisar a simulação e realizar um backup**, no ambiente de homologação:
 
 ~~~bash
-npm run typecheck
-npm run lint
+npx supabase db push
+~~~
+
+As migrations estão em **supabase/migrations/** e incluem RLS, constraints, auditoria, importação documental transacional, controles de consumo e limites para credenciais de integração.
+
+### 3. Criar o acesso inicial
+
+Para abrir o sistema, o usuário precisa de conta no **Supabase Auth**, perfil ativo, vínculo ativo com uma organização e permissões apropriadas. O primeiro administrador e a organização são configurados por sessão administrativa de SQL.
+
+[Instruções para criar o primeiro usuário e organização](docs/AUTHENTICATION.md).
+
+**Nunca desative o RLS para contornar erros de permissão.**
+
+### 4. Implantar funções
+
+Depois de configurar as credenciais seguras e aplicar as migrations necessárias:
+
+~~~bash
+npx supabase functions deploy invite-member --use-api
+npx supabase functions deploy send-email --use-api
+npx supabase functions deploy integration-contracts --use-api --no-verify-jwt
+npx supabase functions deploy dispatch-budget-alerts --use-api --no-verify-jwt
+npx supabase functions list
+~~~
+
+A função de integração autentica tokens de usuários ou credenciais próprias internamente. A função de alertas exige o segredo de agendamento no cabeçalho. A opção **--no-verify-jwt** não remove essas verificações do código.
+
+## Inteligência documental e assistente
+
+**Não é necessário contratar a API do ChatGPT/OpenAI para utilizar o assistente interno e o cadastro documental local.**
+
+- **Assistente interno:** responde a perguntas estruturadas sobre dados disponíveis ao usuário. Não é um modelo generativo treinado localmente.
+- **PDFs:** o PDF.js lê texto dos arquivos.
+- **Imagens e PDFs digitalizados:** o Tesseract.js executa OCR com idioma português.
+- **Revisão humana:** número, fornecedor, CNPJ, valor, vigência, itens e cláusulas extraídos devem ser conferidos antes de salvar.
+
+Os arquivos enviados ficam no Storage privado. O cadastro de contrato, documento e itens usa uma operação SQL transacional. Como o envio do arquivo ocorre antes da transação, uma falha de gravação pode deixar um arquivo pendente de limpeza.
+
+[Como funciona a extração local](docs/DOCUMENT-AI.md).
+
+## Alertas por e-mail
+
+O banco possui filas para alertas de orçamento e de vencimento. **O envio externo somente funciona após configurar e validar o serviço.**
+
+Para habilitar, configure no **Supabase Edge Function Secrets**:
+
+| Variável | Finalidade |
+| --- | --- |
+| **RESEND_API_KEY** | Credencial privada da conta Resend |
+| **RESEND_FROM_EMAIL** | E-mail remetente em domínio verificado |
+| **ALERT_DISPATCH_SECRET** | Segredo aleatório (32+ caracteres) para o agendador |
+| **NEXOFISCAL_PUBLIC_URL** | URL HTTPS pública do sistema (opcional) |
+
+Também é necessário implantar a função **dispatch-budget-alerts** e configurar o workflow **.github/workflows/budget-alerts.yml**.
+
+**Atenção:** o agendador do GitHub ainda usa os nomes legados de secrets **LICITS_DISPATCH_URL** e **LICITS_ALERT_DISPATCH_SECRET**. Confira o [guia de alertas](docs/ALERTAS-FISCAL.md) antes de modificá-los.
+
+## API para outros sistemas
+
+A **API NexoFiscal v1** usa Edge Functions Supabase, sem dependência do ChatGPT.
+
+~~~text
+POST https://SEU-PROJETO.supabase.co/functions/v1/integration-contracts
+~~~
+
+| Operação | Função |
+| --- | --- |
+| **list** | Consultar contratos e aplicar filtros |
+| **create** | Cadastrar contrato e fornecedor |
+| **update** | Atualizar os campos permitidos |
+| **ingest** | Receber um contrato em JSON genérico de integração |
+| **create_credential** | Emitir token próprio para integração |
+| **revoke_credential** | Revogar acesso de integração |
+
+Exemplo de consulta (use um token válido da organização):
+
+~~~bash
+curl -X POST \
+  "https://SEU-PROJETO.supabase.co/functions/v1/integration-contracts" \
+  -H "apikey: SUA_CHAVE_PUBLICAVEL" \
+  -H "Authorization: Bearer SEU_TOKEN_VALIDO" \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"list","organization_id":"UUID_DA_ORGANIZACAO","page":1,"per_page":25}'
+~~~
+
+As credenciais externas possuem escopos de leitura/escrita, revogação e limite de requisições por minuto. A ingestão genérica ainda **não** é um conector específico homologado para SAP, TOTVS ou outros ERPs.
+
+- [Manual da API](docs/API-INTEGRACAO-V1.md)
+- [Especificação OpenAPI](docs/openapi-integration-v1.json)
+
+## Arquitetura
+
+~~~mermaid
+flowchart LR
+    P["Fiscal / Gestor"] --> UI["React + Vite"]
+    UI --> AUTH["Supabase Auth"]
+    UI --> G["Gateway de dados"]
+    G --> DB[("PostgreSQL + RLS")]
+    G --> ST["Storage privado"]
+    UI --> LOCAL["OCR e assistente interno"]
+    ERP["Integrações externas"] --> EDGE["Edge Functions autenticadas"]
+    EDGE --> DB
+    CRON["Agendador"] --> EMAIL["Worker de alertas"]
+    EMAIL --> DB
+    EMAIL --> RESEND["Resend"]
+~~~
+
+## Testes e produção
+
+Verifique o código antes de qualquer implantação:
+
+~~~bash
+npm ci
 npm run build
+npm run lint
+npm run typecheck
+node --test tests/*.test.js
+npm audit
 ~~~
 
-A [CI do GitHub](.github/workflows/ci.yml) executa instalação reprodutível, lint, verificação de tipos e build. **Ela não confirma a conexão com um Supabase externo, nem testes funcionais de ponta a ponta.**
+- **Build e lint aprovados** não comprovam funcionamento no Supabase remoto.
+- **Testes unitários** cobrem somente os cenários escritos.
+- **Testes SQL** e de isolamento são executados pela CI em ambiente local isolado.
+- **npm audit** identifica riscos nas dependências; não execute **npm audit fix --force** sem analisar as mudanças.
+
+**Antes de produção:** aplicar e testar migrations em homologação, validar cada papel e organização, testar importações e compras concorrentes, confirmar e-mails reais, garantir backups/restauração e conferir os logs das Edge Functions.
 
 ## Estrutura do repositório
 
 ~~~text
-NexoFiscal/
+Licits/                         # Nome técnico atual do repositório
 ├── src/
-│   ├── api/dataClient.js            # Gateway Supabase
-│   ├── components/                  # UI, contratos, formulários
-│   ├── pages/                       # Operação e autenticação
-│   ├── contexts/                    # Organização ativa
-│   └── lib/supabaseClient.js
+│   ├── api/                     # Gateway de dados
+│   ├── components/              # Componentes de interface
+│   ├── contexts/                # Organização ativa
+│   ├── lib/                     # OCR, assistente e utilitários
+│   └── pages/                   # Dashboard e módulos do sistema
 ├── supabase/
-│   ├── migrations/                  # Modelo relacional, RLS e constraints
-│   ├── functions/                   # Integrações seguras no servidor
-│   └── tests/                       # Testes SQL previstos
-├── docs/                             # Segurança e operação
-├── .github/workflows/ci.yml         # CI
-├── .env.example                     # Exemplo sem segredos
+│   ├── migrations/              # PostgreSQL, funções, RLS
+│   ├── functions/               # APIs e alertas
+│   └── tests/                   # Testes SQL
+├── tests/                       # Testes unitários
+├── docs/                        # Guias
+├── .github/workflows/           # CI e agendamentos
 └── package.json
 ~~~
 
-## Segurança, testes e próximos passos
+## Documentação
 
-As verificações SQL em CI criam um Supabase **descartável**, aplicam migrations e simulam contas/organizações diferentes. Validam CRUD, políticas de isolamento, baixa atômica, arquivamento, convites e controles de consumo. **Esses testes não fazem deploy nem exercitam serviços externos.**
-
-**[Manual operacional, backup, restauração e LGPD](docs/PRODUCAO-RECUPERACAO.md)**
-
-O arquivo `scripts/backup-database.sh` gera dump PostgreSQL criptografado via age. Uma rotina de backup efetiva precisa ser configurada no ambiente de destino, incluindo cópia de objetos Supabase Storage e teste de restauração.
-
-- [x] Remover dependência direta do SDK Base44 no frontend.
-- [x] Adicionar gateway de dados Supabase com escopo por organização.
-- [x] Usar RPC transacional para baixa de itens (sem gravações separadas).
-- [x] Criar Edge Functions para integrações que exigem segredos.
-- [x] Configurar verificação de tipos, lint e build na CI.
-- [x] Aplicar e validar migrations em banco Supabase **local descartável**.
-- [x] Testar permissões, isolamento e aceite de convites com identidades de teste em PostgreSQL.
-- [x] Cobrir CRUD de contratos, documentos, fiscalização, ocorrências, atas, auditoria e arquivamento com testes SQL.
-- [x] Adicionar limites transacionais por usuário/organização para serviços de terceiros.
-- [x] Documentar retenção, backup criptografado, recuperação e resposta a incidentes.
-- [ ] Validar migrations, autenticação, e CRUD no **projeto Supabase de homologação real**.
-- [ ] Implantar Edge Functions e verificar convites, e-mails e IA com provedores e segredos configurados.
-- [ ] Agendar backups reais de PostgreSQL **e Storage**, comprovar restauração e configurar monitoramento.
-- [x] Implementar projeção financeira e bloqueio atômico de compras acima do valor global.
-- [x] Criar fila deduplicada de alertas do teto e distribuição para fiscal/administradores.
-- [x] Preparar cenário de licitação fictícia iniciado com 50% utilizado.
-- [ ] Implantar no Supabase de homologação e comprovar o envio real de alertas com Resend.
-- [ ] Homologar UX ponta a ponta, segurança, custos, LGPD e plano de produção.
-
-**Leia:** [Autenticação](docs/AUTHENTICATION.md) · [Banco](docs/DATABASE.md) · [Segurança](docs/SECURITY.md) · [Migração anterior](docs/MIGRATION_PROGRESS.md)
+| Guia | Para que serve |
+| --- | --- |
+| [Acesso e autenticação](docs/AUTHENTICATION.md) | Conta, organização e permissões |
+| [Banco de dados](docs/DATABASE.md) | Tabelas e migrations |
+| [Segurança](docs/SECURITY.md) | Autorização e isolamento |
+| [Extração de documentos](docs/DOCUMENT-AI.md) | PDF, OCR e revisão |
+| [Alertas](docs/ALERTAS-FISCAL.md) | Resend e agendamento |
+| [Integrações](docs/API-INTEGRACAO-V1.md) | Operações e tokens da API |
+| [Produção e recuperação](docs/PRODUCAO-RECUPERACAO.md) | Backup e restauração |
+| [Checklist de homologação](docs/PLANO-PRODUCAO-NEXOFISCAL.md) | Pendências antes da publicação |
 
 ---
 
 <div align="center">
 
-**NEXOFISCAL — Gestão Contratual**  
-Mantido por [Walter Matheus](https://github.com/WalterMatheusgg) · [GitHub](https://github.com/WalterMatheusgg)
+**NexoFiscal — Mais controle, rastreabilidade e organização na fiscalização contratual.**
+
+Desenvolvido e mantido por [Walter Matheus](https://github.com/WalterMatheusgg).
 
 </div>
