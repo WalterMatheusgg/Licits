@@ -33,7 +33,7 @@ export default function AdminRequests() {
   const [showNew, setShowNew] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
   const [responseText, setResponseText] = useState('');
-  const [form, setForm] = useState({ request_type: 'edicao', entity_type: '', entity_label: '', description: '' });
+  const [form, setForm] = useState({ request_type: 'edicao', entity_type: '', entity_label: '', entity_id: '', description: '' });
   const queryClient = useQueryClient();
 
   useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
@@ -43,6 +43,12 @@ export default function AdminRequests() {
     queryKey: ['admin-requests'],
     queryFn: () => dataClient.entities.AdminRequest.list('-created_date'),
     initialData: [],
+  });
+
+  const { data: contractOptions = [] } = useQuery({
+    queryKey: ['contracts', 'admin-request-options'],
+    queryFn: () => dataClient.entities.Contract.list('-created_date'),
+    enabled: !isAdmin,
   });
 
   const myRequests = requests.filter(r => r.requester_id === currentUser?.id);
@@ -148,9 +154,9 @@ export default function AdminRequests() {
             </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader><DialogTitle>Nova Solicitação ao Admin</DialogTitle></DialogHeader>
-              <form onSubmit={e => { e.preventDefault(); createMutation.mutate(form); }} className="space-y-4">
+              <form onSubmit={e => { e.preventDefault(); if(form.request_type==='exclusao' && !form.entity_id) return; createMutation.mutate(form); }} className="space-y-4">
                 <div><Label>Tipo de Solicitação *</Label>
-                  <Select value={form.request_type} onValueChange={v => setForm(p=>({...p,request_type:v}))}>
+                  <Select value={form.request_type} onValueChange={v => setForm(p=>({...p,request_type:v,entity_id:'',entity_type:v==='exclusao'?'contrato':p.entity_type,entity_label:''}))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="edicao">Solicitação de Edição</SelectItem>
@@ -162,10 +168,25 @@ export default function AdminRequests() {
                 </div>
                 <div><Label>Tipo de Registro</Label><Input value={form.entity_type} onChange={e => setForm(p=>({...p,entity_type:e.target.value}))} placeholder="Ex: Contrato, Fiscalização, Item..." /></div>
                 <div><Label>Identificação do Registro</Label><Input value={form.entity_label} onChange={e => setForm(p=>({...p,entity_label:e.target.value}))} placeholder="Ex: Contrato 001/2025, Item Papel A4..." /></div>
+                {form.request_type === 'exclusao' && (
+                  <div className="space-y-2">
+                    <Label>Contrato que deseja solicitar o arquivamento *</Label>
+                    <Select value={form.entity_id || undefined} onValueChange={id => {
+                      const found = contractOptions.find(c => c.id === id);
+                      setForm(p => ({ ...p, entity_id: id, entity_type: 'contrato', entity_label: found?.contract_number || '' }));
+                    }}>
+                      <SelectTrigger><SelectValue placeholder="Selecione um contrato cadastrado" /></SelectTrigger>
+                      <SelectContent>
+                        {contractOptions.map(c => <SelectItem key={c.id} value={c.id}>{c.contract_number || c.id}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">A aprovação arquiva o contrato e mantém a trilha de auditoria.</p>
+                  </div>
+                )}
                 <div><Label>Descrição detalhada *</Label>
                   <Textarea value={form.description} onChange={e => setForm(p=>({...p,description:e.target.value}))} required rows={4} placeholder="Descreva detalhadamente o que precisa ser alterado ou excluído e o motivo..." />
                 </div>
-                <Button type="submit" disabled={createMutation.isPending} className="w-full">
+                <Button type="submit" disabled={createMutation.isPending || (form.request_type === 'exclusao' && !form.entity_id)} className="w-full">
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar Solicitação'}
                 </Button>
               </form>
