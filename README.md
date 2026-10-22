@@ -1,3 +1,5 @@
+
+> **Novo guia:** [Acesso ao Licits, configuração da IA e integrações externas](docs/GUIA-ACESSO-INTEGRACOES.md).
 <div align="center">
 
 # 📑 LICITS
