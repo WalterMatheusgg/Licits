@@ -14,11 +14,11 @@
 ## Implantação (somente após validar em homologação)
 
 1. Aplicar migrations em um **projeto Supabase de homologação**. Não use dados reais no contrato de demonstração.
-2. Criar domínio remetente no Resend e definir segredos na área de Edge Functions: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ALERT_DISPATCH_SECRET` (token aleatório de 32+ caracteres). `LICITS_PUBLIC_URL` é opcional e deve ser URL HTTPS publicada.
+2. Criar domínio remetente no Resend e definir segredos na área de Edge Functions: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ALERT_DISPATCH_SECRET` (token aleatório de 32+ caracteres). `NEXOFISCAL_PUBLIC_URL` é opcional e deve ser URL HTTPS publicada.
 3. Implantar a função: `npx supabase@latest functions deploy dispatch-budget-alerts --no-verify-jwt`.
 4. No GitHub, em **Settings → Secrets and variables → Actions**, configurar:
-   - `LICITS_DISPATCH_URL`: `https://SEU-PROJECT-REF.supabase.co/functions/v1/dispatch-budget-alerts`
-   - `LICITS_ALERT_DISPATCH_SECRET`: exatamente o mesmo segredo da função.
+   - `NEXOFISCAL_DISPATCH_URL`: `https://SEU-PROJECT-REF.supabase.co/functions/v1/dispatch-budget-alerts`
+   - `NEXOFISCAL_ALERT_DISPATCH_SECRET`: exatamente o mesmo segredo da função.
 5. Rodar o workflow [Enviar alertas orçamentários](../.github/workflows/budget-alerts.yml) manualmente no GitHub Actions e verificar as entregas na tabela `contract_budget_alerts`. Depois funciona a cada 30 minutos, sujeito a atraso do agendador do GitHub.
 6. Testar primeiro com uma organização fictícia e caixas de e-mail autorizadas.
 
