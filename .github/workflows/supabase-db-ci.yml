@@ -61,6 +61,18 @@ jobs:
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 \
             -f supabase/tests/budget_alerts_integration.sql
+      - name: Test concurrent item withdrawals
+        run: bash supabase/tests/concurrent_item_withdrawal.sh
+      - name: Test contract expiry alert deduplication and worker claims
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f supabase/tests/contract_expiry_alerts_integration.sql
+      - name: Test atomic API contract creation
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f supabase/tests/integration_contract_create.sql
       - name: Validate backup with matching PostgreSQL 17 client
         run: |
           bash -n scripts/backup-database.sh

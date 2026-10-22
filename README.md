@@ -56,7 +56,7 @@ O NexoFiscal organiza o trabalho do fiscal em torno dos contratos **atribuídos 
 | 👥 **Administração** | Membros, papéis, solicitações e trilha automática de auditoria |
 | 🔔 **Notificações** | Leitura de avisos por organização; marcação de leitura de avisos individuais |
 | ✉️ **E-mails** | Edge Function autenticada usando Resend, após configuração |
-| ✨ **IA documental** | Edge Functions autenticadas para perguntas e extração PDF/JPG/PNG, após configuração e revisão humana |
+| ✨ **Inteligência documental** | PDF.js e Tesseract.js extraem texto localmente de PDFs e imagens; campos extraídos exigem revisão humana |
 
 ## Arquitetura
 
@@ -69,7 +69,7 @@ flowchart TD
     GATE --> RPC["RPC transacional de baixa de itens"]
     UI --> EDGE["Edge Functions com autorização"]
     EDGE --> EMAIL["Resend · opcional"]
-    EDGE --> IA["OpenAI · opcional"]
+    EDGE --> IA["OpenAI · perguntas ao assistente"]
 ~~~
 
 - **Frontend:** React Router, TanStack Query, React Hook Form, Tailwind, Radix UI, Recharts.
@@ -123,11 +123,11 @@ npx supabase@latest functions deploy analyze-contract
 npx supabase@latest functions deploy extract-document
 ~~~
 
-Configure segredos **somente no Supabase**: RESEND_API_KEY, RESEND_FROM_EMAIL, OPENAI_API_KEY e, opcionalmente, OPENAI_MODEL e OPENAI_DOCUMENT_MODEL. É necessário um endereço/domínio remetente verificado para enviar e-mails.
+Configure segredos **somente no Supabase**: RESEND_API_KEY, RESEND_FROM_EMAIL e OPENAI_API_KEY para perguntas ao assistente. A extração de documentos não precisa de chave externa. É necessário um endereço/domínio remetente verificado para enviar e-mails.
 
 - [Documentação das Edge Functions](docs/EDGE-FUNCTIONS.md)
 - [Extração de documentos com IA](docs/DOCUMENT-AI.md)
-- A análise com IA **envia o conteúdo à OpenAI somente após ação do usuário**; faça revisão de privacidade e de autorização antes de usar documentos reais.
+- A extração documental roda localmente no navegador; perguntas ao assistente podem enviar o prompt à OpenAI após ação do usuário.
 
 ### 4. Iniciar
 

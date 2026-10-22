@@ -38,7 +38,7 @@ bash scripts/restaurar-acesso.sh --status
 
 - No .env local do **React**: apenas Project URL e publishable/anon key, que sao proprias de clientes publicos.
 - No gerenciador de segredos das **Supabase Edge Functions**: RESEND_API_KEY, RESEND_FROM_EMAIL, OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY e ALERT_DISPATCH_SECRET. Nunca com prefixo VITE_.
-- Nos **GitHub Actions Secrets**: NEXOFISCAL_DISPATCH_URL e NEXOFISCAL_ALERT_DISPATCH_SECRET, quando a rotina estiver implantada.
+- Nos **GitHub Actions Secrets**: LICITS_DISPATCH_URL e LICITS_ALERT_DISPATCH_SECRET, quando a rotina estiver implantada.
 
 A verificacao de CI no GitHub compila o codigo, mas nao comprova que sua conta e seu banco antigos estejam disponiveis. A recuperacao precisa da configuracao real do mesmo projeto Supabase.
 

@@ -10,8 +10,8 @@ const definitions = {
   ContractItem: { table: 'contract_items', columns: 'contract_id price_registration_group_id group_number item_number description unit contracted_qty minimum_qty used_qty unit_price', soft: true },
   ItemWithdrawal: { table: 'item_withdrawals', columns: 'contract_id price_registration_group_id contract_item_id service_order_number withdrawal_date quantity notes user_id' },
   Document: { table: 'documents', columns: 'contract_id title document_type storage_bucket storage_path original_filename mime_type file_size checksum status version signed_by signed_at notes', soft: true },
-  FiscalRecord: { table: 'fiscal_records', columns: 'contract_id price_registration_group_id record_type title description document_id comments status fiscal_date signed_by signed_at attachment_bucket attachment_path attachment_name', soft: true },
-  Occurrence: { table: 'occurrences', columns: 'contract_id price_registration_group_id title content occurrence_date severity status registered_by resolved_by resolved_at resolution document_id attachment_bucket attachment_path attachment_name', soft: true },
+  FiscalRecord: { table: 'fiscal_records', columns: 'contract_id price_registration_group_id record_type title description document_id comments status fiscal_date due_date priority signed_by signed_at attachment_bucket attachment_path attachment_name', soft: true },
+  Occurrence: { table: 'occurrences', columns: 'contract_id price_registration_group_id title content occurrence_date due_date severity status registered_by resolved_by resolved_at resolution document_id attachment_bucket attachment_path attachment_name', soft: true },
   PriceRegistration: { table: 'price_registrations', columns: 'auction_number sei_number object registration_type adhesion_organization adhesion_auction_number status notes', soft: true },
   PriceRegistrationGroup: { table: 'price_registration_groups', columns: 'price_registration_id supplier_id arp_number group_number start_date end_date total_value can_extend status notes', soft: true, supplier: true },
   AdminRequest: { table: 'admin_requests', columns: 'requester_id entity_type entity_id entity_label request_type description status admin_response resolved_by resolved_at' },
@@ -392,10 +392,8 @@ export const dataClient = {
       return (await invokeFunction('analyze-contract', { prompt, response_json_schema, organization_id: ctx.org })).result;
     },
     ExtractDataFromUploadedFile: async ({ file_url }) => {
-      const stored = uploads.get(file_url);
-      if (!stored) return fail('Envie o documento novamente antes de analisar.');
-      const ctx = await context();
-      return invokeFunction('extract-document', { storage_bucket: stored.bucket, storage_path: stored.path, organization_id: ctx.org });
+      if (!uploads.has(file_url)) return fail('Envie o documento novamente antes de analisar.');
+      return fail('A extração é local no formulário Importar Documento da tela de Contratos.');
     }
   }}
 };

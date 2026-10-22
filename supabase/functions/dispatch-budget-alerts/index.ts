@@ -1,5 +1,31 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+async function deliverAlert(db: any, alert: any, contract: any, subject: string, text: string, resendKey: string, sender: string) {
+  const roles = await db.from('organization_members')
+    .select('user_id,role,status').eq('organization_id',alert.organization_id).eq('status','active');
+  if (roles.error) throw roles.error;
+  const ids = [...new Set((roles.data || []).filter(
+    (role: any) => role.user_id === contract.fiscal_user_id || role.role === 'organization_admin'
+  ).map((role: any) => role.user_id))];
+  if (!ids.length) throw Error('No active fiscal or administrator');
+  const people = await db.from('profiles').select('id,email,status').in('id',ids).eq('status','active');
+  if (people.error) throw people.error;
+  const recipients = (people.data || []).filter((person: any) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(person.email || ''));
+  if (!recipients.length) throw Error('No validated recipient e-mail');
+  for (const person of recipients) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + resendKey,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': 'licits-' + alert.id + '-' + person.id,
+      },
+      body: JSON.stringify({from: sender, to: [person.email], subject, text}),
+    });
+    if (!response.ok) throw Error('Email service HTTP ' + response.status);
+  }
+}
+
 // Cron-only authenticated delivery of durable fiscal budget warnings.
 // Deploy with --no-verify-jwt, and use the separate secret X-Alert-Token.
 Deno.serve(async (req) => {
@@ -25,17 +51,6 @@ Deno.serve(async (req) => {
         .eq('id',alert.contract_id).eq('organization_id',alert.organization_id).single();
       if (result.error || !result.data) throw Error('Contract not found');
       const contract=result.data;
-      const roles=await db.from('organization_members')
-        .select('user_id,role,status').eq('organization_id',alert.organization_id).eq('status','active');
-      if (roles.error) throw roles.error;
-      const ids=[...new Set((roles.data||[]).filter(
-        r => r.user_id===contract.fiscal_user_id || r.role==='organization_admin'
-      ).map(r=>r.user_id))];
-      if(!ids.length)throw Error('No active fiscal or administrator');
-      const people=await db.from('profiles').select('id,email,full_name,status').in('id',ids).eq('status','active');
-      if(people.error)throw people.error;
-      const recipients=(people.data||[]).filter(p=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email||''));
-      if(!recipients.length)throw Error('No validated recipient e-mail');
       const brl=(num:number)=>Number(num).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
       const pct=contract.total_value>0 ? contract.used_value*100/contract.total_value:0;
       const baseURL=Deno.env.get('LICITS_PUBLIC_URL') || '';
@@ -54,18 +69,7 @@ Deno.serve(async (req) => {
         'Aviso automático; não substitui o controle e a decisão administrativa do fiscal.',
         url
       ].join('\n');
-      for(const person of recipients){
-        const response=await fetch('https://api.resend.com/emails',{
-          method:'POST',
-          headers:{
-            'Authorization':'Bearer '+resendKey,
-            'Content-Type':'application/json',
-            'Idempotency-Key':'licits-'+alert.id+'-'+person.id
-          },
-          body:JSON.stringify({from:sender,to:[person.email],subject,text:message})
-        });
-        if(!response.ok)throw Error('Email service HTTP '+response.status);
-      }
+      await deliverAlert(db,alert,contract,subject,message,resendKey,sender);
       const done=await db.from('contract_budget_alerts').update({
         status:'sent',sent_at:new Date().toISOString(),last_error:null
       }).eq('id',alert.id).eq('status','processing');
@@ -81,5 +85,61 @@ Deno.serve(async (req) => {
       }).eq('id',alert.id).eq('status','processing');
     }
   }
-  return Response.json({processed:(claimed.data||[]).length,sent,failed});
+
+  const enqueuedExpiry = await db.rpc('enqueue_contract_expiry_alerts');
+  if (enqueuedExpiry.error) return Response.json({error:enqueuedExpiry.error.message},{status:503});
+  const claimedExpiry = await db.rpc('claim_contract_expiry_alerts',{p_limit:20});
+  if (claimedExpiry.error) return Response.json({error:claimedExpiry.error.message},{status:503});
+  for (const alert of claimedExpiry.data || []) {
+    try {
+      const result = await db.from('contracts')
+        .select('id,organization_id,contract_number,object,status,fiscal_user_id,total_value,used_value,end_date')
+        .eq('id',alert.contract_id).eq('organization_id',alert.organization_id).single();
+      if (result.error || !result.data) throw Error('Contract not found');
+      const contract = result.data;
+      if (contract.status !== 'ativo' || contract.end_date !== alert.end_date) {
+        await db.from('contract_expiry_alerts').update({status:'cancelled'})
+          .eq('id',alert.id).eq('status','processing');
+        continue;
+      }
+      const days = Number(alert.threshold_days);
+      const when = days === 0 ? 'vence hoje' : `vence em ${days} dia(s)`;
+      const brl = (num:number) => Number(num).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      const baseURL = Deno.env.get('LICITS_PUBLIC_URL') || '';
+      const url = /^https:\/\//.test(baseURL) ? '\nAcessar contrato: '+baseURL.replace(/\/$/,'')+'/contracts/'+contract.id : '';
+      const subject = '[Licits] Contrato '+contract.contract_number+' '+when;
+      const message = [
+        'ALERTA DE VIGÊNCIA CONTRATUAL — FISCALIZAÇÃO',
+        'Contrato: '+contract.contract_number,
+        'Objeto: '+contract.object,
+        'Data final da vigência: '+new Date(`${alert.end_date}T00:00:00Z`).toLocaleDateString('pt-BR'),
+        days === 0 ? 'A vigência termina hoje.' : 'A vigência termina em '+days+' dia(s).',
+        'Valor contratado: '+brl(contract.total_value),
+        'Saldo atual: '+brl(contract.total_value-contract.used_value),
+        'Ação recomendada: verificar pendências, necessidade de prorrogação e encerramento antes do fim da vigência.',
+        'Aviso automático; não substitui o controle e a decisão administrativa do fiscal.',
+        url,
+      ].join('\n');
+      await deliverAlert(db,alert,contract,subject,message,resendKey,sender);
+      const done = await db.from('contract_expiry_alerts').update({
+        status:'sent',sent_at:new Date().toISOString(),last_error:null,
+      }).eq('id',alert.id).eq('status','processing');
+      if (done.error) throw done.error;
+      sent++;
+    } catch (error) {
+      failed++;
+      const minutes = Math.min(360,10*(2**Math.max(0,Number(alert.attempts)-1)));
+      await db.from('contract_expiry_alerts').update({
+        status:'failed',
+        last_error:String(error instanceof Error?error.message:error).slice(0,200),
+        retry_at:new Date(Date.now()+minutes*60000).toISOString(),
+      }).eq('id',alert.id).eq('status','processing');
+    }
+  }
+  return Response.json({
+    processed:(claimed.data||[]).length+(claimedExpiry.data||[]).length,
+    budget_processed:(claimed.data||[]).length,
+    expiry_processed:(claimedExpiry.data||[]).length,
+    sent,failed,
+  });
 });

@@ -28,6 +28,12 @@ const statusColors = {
   em_andamento: 'bg-blue-500/10 text-blue-600',
   concluido: 'bg-emerald-500/10 text-emerald-600',
 };
+const priorityColors = {
+  baixa: 'bg-muted text-muted-foreground',
+  media: 'bg-blue-500/10 text-blue-600',
+  alta: 'bg-amber-500/10 text-amber-600',
+  critica: 'bg-red-500/10 text-red-600',
+};
 
 export default function FiscalTab({ contractId, contract }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -36,6 +42,7 @@ export default function FiscalTab({ contractId, contract }) {
   const [form, setForm] = useState({
     record_type: '', title: '', description: '', comments: '',
     fiscal_date: new Date().toISOString().split('T')[0],
+    due_date: '', priority: 'media',
     status: 'pendente', file_url: '', file_name: ''
   });
   const queryClient = useQueryClient();
@@ -56,11 +63,11 @@ export default function FiscalTab({ contractId, contract }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fiscal-records', contractId] });
       setShowAdd(false);
-      setForm({ record_type: '', title: '', description: '', comments: '', fiscal_date: new Date().toISOString().split('T')[0], status: 'pendente', file_url: '', file_name: '' });
+      setForm({ record_type: '', title: '', description: '', comments: '', fiscal_date: new Date().toISOString().split('T')[0], due_date: '', priority: 'media', status: 'pendente', file_url: '', file_name: '' });
     }
   });
 
-  const isAdmin = currentUser?.role === 'admin';
+  const canWriteFiscal = ['admin', 'gestor'].includes(currentUser?.role);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => dataClient.entities.FiscalRecord.delete(id),
@@ -209,12 +216,12 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
               <Download className="w-4 h-4" /> Relatório Geral
             </Button>
           )}
-        {!isAdmin && (
+        {!canWriteFiscal && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg">
             <Lock className="w-3 h-3" /> Somente admin pode criar rotinas
           </div>
         )}
-        {isAdmin && <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        {canWriteFiscal && <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Nova Rotina de Fiscalização</Button>
           </DialogTrigger>
@@ -232,6 +239,22 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
                 <div>
                   <Label>Data da Fiscalização</Label>
                   <Input type="date" value={form.fiscal_date} onChange={e => update('fiscal_date', e.target.value)} />
+                </div>
+                <div>
+                  <Label>Prazo de conclusão</Label>
+                  <Input type="date" value={form.due_date} onChange={e => update('due_date', e.target.value)} />
+                </div>
+                <div>
+                  <Label>Prioridade</Label>
+                  <Select value={form.priority} onValueChange={v => update('priority', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="baixa">Baixa</SelectItem>
+                      <SelectItem value="media">Média</SelectItem>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="critica">Crítica</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div><Label>Título</Label><Input value={form.title} onChange={e => update('title', e.target.value)} placeholder="Ex: Vistoria mensal - março/2025" /></div>
@@ -292,9 +315,10 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <Badge variant="outline" className="text-[10px] capitalize">{RECORD_TYPES.find(t => t.value === r.record_type)?.label || r.record_type}</Badge>
                     <Badge className={`${statusColors[r.status]} border-0 text-[10px]`}>{r.status}</Badge>
-                    {r.fiscal_date && (
+                    <Badge className={`${priorityColors[r.priority || 'media']} border-0 text-[10px]`}>{r.priority || 'media'}</Badge>
+                    {r.due_date && (
                       <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />{format(new Date(r.fiscal_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        <Calendar className="w-3 h-3" />Prazo {format(new Date(r.due_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </span>
                     )}
                   </div>
@@ -314,7 +338,7 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
                   )}
                 </div>
                 <div className="flex flex-col gap-2 flex-shrink-0">
-                  {!r.signed_by && isAdmin && (
+                  {!r.signed_by && canWriteFiscal && (
                     <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => signMutation.mutate(r)} disabled={signMutation.isPending}>
                       <CheckCircle2 className="w-3 h-3" /> Assinar
                     </Button>

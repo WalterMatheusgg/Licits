@@ -6,20 +6,61 @@ Endpoint **implementado no repositório, mas ainda não implantado nem homologad
 ### Função
 `POST https://nefimqoszcidsnqvlnnh.supabase.co/functions/v1/integration-contracts`
 
-A API lê contratos da organização associada ao usuário autenticado, com dados financeiros básicos. Ela não executa compras, altera contratos ou concede acesso a outros usuários.
+A API lista, filtra, cria e atualiza contratos dentro da organização autorizada. Ela não executa compras. O contrato OpenAPI está em [openapi-integration-v1.json](openapi-integration-v1.json).
 
-**Autorização:** envie `Authorization: Bearer <access_token_do_supabase_auth>` e `apikey: <publishable_key>`. A função usa `authorize` e `member`, recusando usuários sem perfil ativo ou sem vínculo ativo com a organização informada. Nunca coloque a chave administrativa do Supabase no aplicativo integrador.
+**Autorização de usuário:** envie `Authorization: Bearer <access_token_do_supabase_auth>` e `apikey: <publishable_key>`. A função recusa usuários sem perfil ativo ou sem vínculo ativo com a organização. Para ERP e integrações servidor-a-servidor, gestores podem emitir credencial própria com escopos `contracts:read` e/ou `contracts:write`; apenas o hash SHA-256 é armazenado, o segredo é mostrado uma única vez e pode ser revogado.
 
 **Corpo de exemplo:**
 ```json
 {
   "organization_id": "UUID_DA_ORGANIZACAO",
+  "operation": "list",
+  "status": "ativo",
+  "supplier_id": "UUID_DO_FORNECEDOR",
+  "end_date_from": "2026-01-01",
+  "end_date_to": "2026-12-31",
+  "contract_number": "CT-001",
+  "updated_since": "2026-01-01T00:00:00Z",
   "page": 1,
   "per_page": 25
 }
 ```
 
-**Resposta:** `api_version`, `organization_id`, `data` (contratos) e `pagination`. Limite: 100 por página.
+Filtros são opcionais; `operation` omisso equivale a `list`. A resposta de listagem contém `api_version`, `organization_id`, `data` e `pagination`. Limite: 100 por página.
+
+### Atualizar contrato
+Somente `organization_admin` e `gestor` podem atualizar. Envie `operation: "update"`, `contract_id` e um objeto `updates` com pelo menos um campo permitido. Valores usados, vínculo do fornecedor, organização e ID não são editáveis por esta operação.
+
+```json
+{
+  "operation": "update",
+  "organization_id": "UUID_DA_ORGANIZACAO",
+  "contract_id": "UUID_DO_CONTRATO",
+  "updates": {
+    "end_date": "2027-12-31",
+    "total_value": 125000
+  }
+}
+```
+
+Campos permitidos: `contract_number`, `sei_number`, `auction_number`, `object`, `status`, `start_date`, `end_date`, `total_value`, `modality`, `contract_type`, `responsible_sector`, `can_extend`, `extensions_done`, `max_extensions`, `fiscal_status` e `notes`. O valor total não pode ficar abaixo do valor já utilizado; datas devem ser coerentes; números duplicados retornam HTTP 409.
+
+### Credenciais máquina-a-máquina
+Crie a credencial com JWT de usuário gestor/administrador. `expires_at` é opcional; quando informado, deve vencer em até um ano.
+
+```json
+{
+  "operation": "create_credential",
+  "organization_id": "UUID_DA_ORGANIZACAO",
+  "name": "ERP de compras",
+  "scopes": ["contracts:read", "contracts:write"],
+  "expires_at": "2027-10-22T00:00:00Z"
+}
+```
+
+A resposta HTTP 201 inclui `data.token`; armazene-o em um cofre de segredos, pois ele não será exibido novamente. Envie-o como `Authorization: Bearer lct_...` nas consultas seguintes. O gateway da função deve ser implantado com `--no-verify-jwt`: a função verifica o JWT Supabase ou consulta a credencial hasheada em todas as requisições. Nunca use `SUPABASE_SERVICE_ROLE_KEY` como credencial externa.
+
+Para revogar, envie `operation: "revoke_credential"`, o `organization_id` e o `credential_id`, autenticando com JWT de gestor/administrador. A credencial é invalidada imediatamente.
 
 ### Implantação
 No Codespaces com Supabase CLI vinculado:
@@ -27,14 +68,14 @@ No Codespaces com Supabase CLI vinculado:
 npx supabase db push --dry-run
 # Aplique migrações após revisão e backup:
 npx supabase db push
-npx supabase functions deploy integration-contracts --use-api
+npx supabase functions deploy integration-contracts --use-api --no-verify-jwt
 npx supabase functions list
 ```
 
 ### Limitações e requisitos antes de clientes externos
-- OAuth / credenciais máquina-a-máquina dedicadas, rotação, limites de taxa, revogação e logs de acesso;
-- gestão explícita de quais campos cada parceiro pode consultar;
-- testes de isolamento de organizações, paginação, expiracão do JWT e volume de consultas;
+- A sincronização pode consultar deltas com `updated_since`; webhooks de saída e adaptadores específicos de ERP ainda não estão implementados;
+- as credenciais podem ser revogadas e expiram, mas ainda não há limites de taxa individuais por credencial;
+- validar isolamento de organizações, escopos, paginação, expiração, revogação e volume em homologação;
 - testes de integração reais no Supabase.
 
 Não exponha o endpoint publicamente sem o gateway de autorização e o controle de taxa apropriados.
@@ -61,4 +102,4 @@ curl -X POST 'https://nefimqoszcidsnqvlnnh.supabase.co/functions/v1/integration-
 
 A criação utiliza a identidade do usuário autenticado e o `organization_id` validado no backend, nunca uma chave da OpenAI. A resposta bem-sucedida tem HTTP 201. Contratos com mesmo número são recusados com HTTP 409 (verificação preliminar e índice único no banco).
 
-**Atenção:** esse fluxo executa duas inserções (fornecedor e contrato), portanto não é atômico e ainda precisa de teste de concorrência, auditoria de erros e de um adaptador de identidade máquina-a-máquina antes do uso por integrações de produção. Nunca compartilhe tokens de usuários em código-fonte. A função depende de deploy no Supabase.
+O fornecedor e o contrato são criados na mesma RPC transacional; número duplicado reverte a operação inteira. Testes automatizados cobrem rollback, escopos e auditoria, mas a concorrência e o isolamento ainda precisam ser homologados no projeto Supabase de destino.

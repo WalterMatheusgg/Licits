@@ -9,7 +9,8 @@ where schemaname = 'public'
     'contracts', 'contract_items', 'item_withdrawals', 'documents',
     'fiscal_records', 'occurrences', 'price_registrations',
     'price_registration_groups', 'admin_requests', 'notifications',
-    'ai_analysis_jobs', 'ai_analysis_results', 'audit_logs'
+    'ai_analysis_jobs', 'ai_analysis_results', 'audit_logs',
+    'contract_expiry_alerts', 'integration_credentials'
   )
 order by tablename;
 

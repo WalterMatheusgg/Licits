@@ -73,6 +73,39 @@ export default function Contracts() {
     onError: (err) => setSaveError(err.message || 'Não foi possível cadastrar o contrato.')
   });
 
+  const createFromDocument = async (data) => {
+    if (!data.contract_number.trim() || !data.object.trim() || !data.supplier_name.trim()) {
+      throw new Error('Preencha número, objeto e fornecedor antes de salvar.');
+    }
+    const document = await dataClient.entities.Document.create({
+      title: data.original_filename || 'Contrato importado',
+      document_type: 'contrato',
+      storage_bucket: data.storage_bucket,
+      storage_path: data.storage_path,
+      original_filename: data.original_filename,
+      mime_type: data.type,
+      file_size: data.size,
+      status: 'pendente',
+    });
+    const created = await dataClient.entities.Contract.create({
+      ...data,
+      source_document_id: document.id,
+    });
+    const items = (data.items || []).filter(item => item.description && item.quantity > 0 && item.unit_price > 0);
+    await Promise.all(items.map(item => dataClient.entities.ContractItem.create({
+      contract_id: created.id,
+      item_number: item.item_number,
+      description: item.description,
+      unit: item.unit,
+      contracted_qty: item.quantity,
+      unit_price: item.unit_price,
+    })));
+    await dataClient.entities.Document.update(document.id, { contract_id: created.id });
+    await queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    setShowAI(false);
+    logAudit('cadastro', 'Contract', created.id, `Contrato ${created.contract_number} importado de documento`);
+  };
+
   const deleteMutation = useMutation({
     mutationFn: (id) => dataClient.entities.Contract.delete(id),
     onSuccess: (_, id) => {
@@ -116,7 +149,7 @@ export default function Contracts() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>Importar documento e cadastrar dados</DialogTitle></DialogHeader>
-              <ContractAIUpload onSave={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
+              <ContractAIUpload onSave={createFromDocument} isLoading={createMutation.isPending} />
             </DialogContent>
           </Dialog>
           <DropdownMenu>

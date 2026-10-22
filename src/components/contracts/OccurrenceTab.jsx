@@ -34,6 +34,7 @@ export default function OccurrenceTab({ contractId, contract }) {
   const [form, setForm] = useState({
     title: '', content: '', severity: 'media',
     occurrence_date: new Date().toISOString().split('T')[0],
+    due_date: '',
     signature_name: '', file_url: '', file_name: '',
   });
   const queryClient = useQueryClient();
@@ -49,7 +50,7 @@ export default function OccurrenceTab({ contractId, contract }) {
     initialData: [],
   });
 
-  const isAdmin = currentUser?.role === 'admin';
+  const canWriteFiscal = ['admin', 'gestor'].includes(currentUser?.role);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => dataClient.entities.Occurrence.delete(id),
@@ -69,7 +70,7 @@ export default function OccurrenceTab({ contractId, contract }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['occurrences', contractId] });
       setShowAdd(false);
-      setForm({ title: '', content: '', severity: 'media', occurrence_date: new Date().toISOString().split('T')[0], signature_name: '', file_url: '', file_name: '' });
+      setForm({ title: '', content: '', severity: 'media', occurrence_date: new Date().toISOString().split('T')[0], due_date: '', signature_name: '', file_url: '', file_name: '' });
     }
   });
 
@@ -156,7 +157,7 @@ export default function OccurrenceTab({ contractId, contract }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{occurrences.length} ocorrência(s)</p>
-        {isAdmin ? (
+        {canWriteFiscal ? (
           <Dialog open={showAdd} onOpenChange={setShowAdd}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Nova Ocorrência</Button>
@@ -176,6 +177,10 @@ export default function OccurrenceTab({ contractId, contract }) {
                   <div>
                     <Label>Data da Ocorrência</Label>
                     <Input type="date" value={form.occurrence_date} onChange={e => update('occurrence_date', e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Prazo de resposta</Label>
+                    <Input type="date" value={form.due_date} onChange={e => update('due_date', e.target.value)} />
                   </div>
                   <div>
                     <Label>Severidade</Label>

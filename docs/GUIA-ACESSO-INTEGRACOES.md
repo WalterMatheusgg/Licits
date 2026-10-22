@@ -14,19 +14,18 @@
 4. Implante com `npx supabase functions deploy --use-api` (útil quando o bundler local falha por DNS). Confirme com `npx supabase functions list`.
 5. Configure segredos com `npx supabase secrets set OPENAI_API_KEY=...` **digitando o valor apenas no terminal privado**, ou de preferência pelo painel **Edge Functions → Secrets**. Não cole chaves em chats, tickets, commits ou logs.
 6. Configure `RESEND_API_KEY` e `RESEND_FROM_EMAIL` (domínio verificado) para e-mails. O dispatcher exige `ALERT_DISPATCH_SECRET` (valor aleatório com no mínimo 32 caracteres), e o acionamento cron autenticado por `X-Alert-Token`. Implante `dispatch-budget-alerts` conforme exigências de JWT/cron do código, sem torná-lo público por engano.
-7. Para extração de documentos, é necessário `OPENAI_API_KEY` com faturamento/créditos válidos na API. A assinatura do ChatGPT não configura automaticamente a API.
+7. A extração documental é local no navegador e não exige chave paga. `OPENAI_API_KEY` é usada somente pelo assistente de perguntas.
 
-## Diagnóstico da IA documental
-- A função `extract-document` aceita somente PDF, JPG e PNG de até **6 MB**, já enviados ao bucket privado `contracts` no caminho iniciado por `organization_id/`.
-- Somente perfis com vínculo ativo de `organization_admin` ou `gestor` podem executá-la. O papel `platform_admin` isolado não substitui o vínculo na organização.
-- A função utiliza `OPENAI_API_KEY` e opcionalmente `OPENAI_DOCUMENT_MODEL` (padrão `gpt-4.1-mini`).
-- Um erro HTTP não-2xx pode significar falta de segredo, permissão, arquivo, limite de tamanho ou rejeição da API externa. **Não é possível concluir a causa exata sem os logs.**
-- Consulte Supabase → Edge Functions → `extract-document` → Logs. Identifique código HTTP e mensagem sanitizada, sem compartilhar tokens ou conteúdo confidencial do contrato. Verifique também `analyze-contract`.
-- Depois de corrigir, reimplante com `npx supabase functions deploy extract-document --use-api` se houve mudança de código. Segredos configurados não exigem commit no GitHub.
-- A extração deve ser revisada por pessoa responsável antes de salvar informações contratuais.
+## Extração documental
+- Use **Contratos → Importar Documento** para PDF, JPG ou PNG de até **15 MB**; PDFs têm limite de 30 páginas.
+- Texto PDF é lido com PDF.js; páginas digitalizadas e imagens passam por Tesseract.js com português, executado no navegador.
+- A extração de valores, cláusulas, vigência, fornecedor e itens é heurística. Revise no documento original antes de salvar.
+- A função `extract-document` antiga retorna HTTP 410 e não chama mais API externa.
 
-## Arquitetura proposta para integrações externas
-Para integrar outros bancos, ERPs e APIs, **não conecte PostgreSQL, Oracle ou SQL Server diretamente pelo navegador**. Crie um gateway de integrações autenticado no backend (Supabase Edge Functions ou serviço dedicado) com adaptadores por fornecedor.
+## Integrações externas
+A API v1 de contratos oferece listagem filtrada, sincronização incremental por `updated_since`, criação transacional, atualização e credenciais máquina-a-máquina com escopos, expiração e revogação. Consulte [API e OpenAPI](API-INTEGRACAO-V1.md). Webhooks de saída, rate limit por credencial e adaptadores específicos de importação para ERPs ainda precisam ser implementados antes de integrar sistemas externos em produção.
+
+Para integrar outros bancos, ERPs e APIs, **não conecte PostgreSQL, Oracle ou SQL Server diretamente pelo navegador**. Use gateway autenticado no backend com adaptadores por fornecedor.
 
 **Contrato sugerido**: `POST /integrations/v1/import/contracts`, `GET /integrations/v1/jobs/{id}`, `POST /integrations/v1/webhooks/{provider}`. Requisições devem identificar organização e usuário autenticados; tokens de terceiros ficam em cofre de segredos e nunca no frontend. Esta é uma **proposta**, não uma API já implementada.
 
@@ -35,6 +34,6 @@ Padrões fundamentais: autenticação e autorização multi-tenant/RLS; versiona
 ## Checklist de validação
 - Login e recuperação de senha; membro ativo e isolamento entre organizações.
 - Dashboard do fiscal e permissões por papel.
-- Upload de PDF válido, erro amigável por falta de chave e extração revisada.
-- Contrato de teste com 50% utilizado; prévia de compra, bloqueio de extrapolação, filas de alertas 80/90/100% e entrega real por e-mail.
+- Upload de PDF textual e digitalizado, OCR e extração revisada.
+- Contrato de teste com 50% utilizado; prévia de compra, bloqueio de extrapolação, filas de alertas 80/90/100%, avisos de vencimento e entrega real por e-mail.
 - Verificação dos logs das funções e testes automatizados antes de produção.
