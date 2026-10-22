@@ -94,6 +94,8 @@ export default function Dashboard() {
   const usedValue = allItems.reduce((s,c)=>s+(c.used_value||0),0);
   const lowFiscal = contracts.filter(c => c.fiscal_status === 'baixa');
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
+  const mine = contracts.filter(c => c.fiscal_user_id && c.fiscal_user_id === currentUser?.id);
+  const mineAtRisk = mine.filter(c => c.total_value > 0 && c.used_value / c.total_value >= 0.8);
 
   const handleSetExpiringFilter = (d) => {
     setExpiringFilter(d);
@@ -127,7 +129,7 @@ export default function Dashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <EmptyState
             icon={FileText}
-            title="Bem-vindo ao ContratoIA!"
+            title="Bem-vindo ao Licits!"
             message="Você ainda não possui contratos cadastrados. Comece criando seu primeiro contrato ou utilize a leitura inteligente com IA para extrair dados automaticamente."
             action={
               <div className="flex gap-3 flex-wrap justify-center">
@@ -146,6 +148,34 @@ export default function Dashboard() {
           />
         </motion.div>
       )}
+
+      {/* A fila do fiscal deve preceder os gráficos globais. */}
+      <section className="border rounded-2xl p-4 lg:p-5 bg-card space-y-3 shadow-sm">
+        <div className="flex flex-wrap justify-between gap-2 items-center">
+          <div>
+            <h2 className="font-bold text-lg">Minha carteira de fiscalização</h2>
+            <p className="text-sm text-muted-foreground">{mine.length} contrato(s) atribuídos a você · {mineAtRisk.length} próximo(s) do teto financeiro</p>
+          </div>
+          <Link to="/contracts" className="text-sm text-blue-600 hover:underline">Ver todos os contratos</Link>
+        </div>
+        {mine.length === 0
+          ? <p className="text-sm text-muted-foreground py-2">Nenhum contrato atribuído. O gestor pode selecionar o fiscal no cadastro ou na edição do contrato.</p>
+          : <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{[...mine]
+            .sort((a,b)=>(b.total_value>0?b.used_value/b.total_value:0)-(a.total_value>0?a.used_value/a.total_value:0))
+            .slice(0,8).map(c => {
+            const pct=c.total_value>0 ? Number(c.used_value||0)*100/Number(c.total_value) : 0;
+            const remaining=Number(c.total_value||0)-Number(c.used_value||0);
+            return <Link key={c.id} to={`/contracts/${c.id}`} className={`rounded-xl p-3 border hover:shadow-sm transition-shadow ${pct>=90?'border-red-300 bg-red-50':pct>=80?'border-amber-300 bg-amber-50':'bg-background'}`}>
+              <div className="flex justify-between gap-3">
+                <span className="font-semibold text-sm">{c.contract_number}</span>
+                <span className={`text-xs font-bold ${pct>=90?'text-red-700':pct>=80?'text-amber-700':'text-emerald-700'}`}>{pct.toFixed(1)}% utilizado</span>
+              </div>
+              <p className="text-xs text-muted-foreground truncate mt-1">{c.object}</p>
+              <p className="text-xs mt-2">Utilizado: {fmtBRL(Number(c.used_value||0))} · Saldo: <strong>{fmtBRL(remaining)}</strong></p>
+              <div className="h-2 rounded-full bg-muted overflow-hidden mt-2"><div className={`h-full ${pct>=90?'bg-red-600':pct>=80?'bg-amber-500':'bg-emerald-600'}`} style={{width:`${Math.min(100,Math.max(0,pct))}%`}}/></div>
+            </Link>;
+          })}</div>}
+      </section>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
