@@ -1,15 +1,15 @@
-# Recuperacao do login e da conexao original — Licits
+# Recuperacao do login e da conexao original — NexoFiscal
 
 ## Diagnostico do historico
 
-O ZIP de origem do Licits tinha login pelo Supabase Auth e, em paralelo, um SDK Base44 usado em fluxos de negocio. Na migracao para Supabase, o cliente de dados Base44 foi removido. O arquivo original ZIP, examinado no historico do GitHub, **nao contem .env ou .env.local** com as credenciais originais.
+O ZIP de origem do NexoFiscal tinha login pelo Supabase Auth e, em paralelo, um SDK Base44 usado em fluxos de negocio. Na migracao para Supabase, o cliente de dados Base44 foi removido. O arquivo original ZIP, examinado no historico do GitHub, **nao contem .env ou .env.local** com as credenciais originais.
 
 O repositorio GitHub esta **publico**. Nao publique .env, senhas, service role, chaves privadas ou tokens nesse repositorio, mesmo que pretenda altera-lo para privado.
 
 ## Recuperar a conexao sem criar outro banco
 
 1. Use exatamente o projeto Supabase anterior. Confira em Supabase Dashboard → Project Settings → API Keys a Project URL e uma chave publica publishable ou anon desse projeto.
-2. Se possui .env.local/.env de uma pasta antiga do Licits, importe o arquivo com:
+2. Se possui .env.local/.env de uma pasta antiga do NexoFiscal, importe o arquivo com:
 
 ~~~bash
 bash scripts/restaurar-acesso.sh --from "/CAMINHO/DA/INSTALACAO_ANTIGA/.env.local"
@@ -38,7 +38,7 @@ bash scripts/restaurar-acesso.sh --status
 
 - No .env local do **React**: apenas Project URL e publishable/anon key, que sao proprias de clientes publicos.
 - No gerenciador de segredos das **Supabase Edge Functions**: RESEND_API_KEY, RESEND_FROM_EMAIL, OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY e ALERT_DISPATCH_SECRET. Nunca com prefixo VITE_.
-- Nos **GitHub Actions Secrets**: LICITS_DISPATCH_URL e LICITS_ALERT_DISPATCH_SECRET, quando a rotina estiver implantada.
+- Nos **GitHub Actions Secrets**: NEXOFISCAL_DISPATCH_URL e NEXOFISCAL_ALERT_DISPATCH_SECRET, quando a rotina estiver implantada.
 
 A verificacao de CI no GitHub compila o codigo, mas nao comprova que sua conta e seu banco antigos estejam disponiveis. A recuperacao precisa da configuracao real do mesmo projeto Supabase.
 
