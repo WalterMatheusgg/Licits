@@ -47,7 +47,7 @@ export default function ContractItemsTab({ contractId, contract }) {
   const { data: purchasePreview, error: previewError, isFetching: previewLoading } = useQuery({
     queryKey: ['purchase-preview',showConsume?.id,previewQty],
     queryFn: () => dataClient.finance.preview(showConsume.id,previewQty),
-    enabled: !!showConsume?.id && Number.isFinite(previewQty) && previewQty > 0 && !!showConsume?.contract_id,
+    enabled: !!showConsume?.id && Number.isFinite(previewQty) && previewQty > 0 && !!(showConsume?.contract_id && !showConsume?.price_registration_group_id),
     retry: false,
   });
 
@@ -281,7 +281,7 @@ export default function ContractItemsTab({ contractId, contract }) {
                               <div><Label>Nº da O.S. / Ordem de Serviço</Label><Input value={consumeForm.os_number} onChange={e => setConsumeForm(p=>({...p,os_number:e.target.value}))} placeholder="Ex: OS-001/2025" /></div>
                               <div><Label>Data da Baixa *</Label><Input type="date" value={consumeForm.withdrawal_date} onChange={e => setConsumeForm(p=>({...p,withdrawal_date:e.target.value}))} required /></div>
                               <div><Label>Quantidade *</Label><Input type="number" min="0.01" step="0.01" max={available} value={consumeForm.quantity} onChange={e => setConsumeForm(p=>({...p,quantity:e.target.value}))} placeholder="0" autoFocus /></div>
-                              {showConsume?.contract_id && Number.isFinite(previewQty) && previewQty > 0 && (
+                              {(showConsume?.contract_id && !showConsume?.price_registration_group_id) && Number.isFinite(previewQty) && previewQty > 0 && (
                                 <div className={`rounded-lg border p-3 space-y-1 text-sm ${purchasePreview?.permitted ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50'}`}>
                                   {previewLoading ? <p>Calculando impacto no orçamento…</p> :
                                   previewError ? <p className="text-red-700">Prévia indisponível: {previewError.message}</p> :
@@ -297,7 +297,7 @@ export default function ContractItemsTab({ contractId, contract }) {
                                 </div>
                               )}
                               <div><Label>Observações</Label><Input value={consumeForm.notes} onChange={e => setConsumeForm(p=>({...p,notes:e.target.value}))} placeholder="Opcional" /></div>
-                              <Button onClick={() => consumeMutation.mutate({ item, cf: consumeForm })} disabled={!consumeForm.quantity || parseFloat(consumeForm.quantity)<=0 || parseFloat(consumeForm.quantity)>available || consumeMutation.isPending || (showConsume?.contract_id && (!purchasePreview?.permitted || previewLoading))} className="w-full">
+                              <Button onClick={() => consumeMutation.mutate({ item, cf: consumeForm })} disabled={!consumeForm.quantity || parseFloat(consumeForm.quantity)<=0 || parseFloat(consumeForm.quantity)>available || consumeMutation.isPending || ((showConsume?.contract_id && !showConsume?.price_registration_group_id) && (!purchasePreview?.permitted || previewLoading))} className="w-full">
                                 Confirmar Baixa
                               </Button>
                             </div>
