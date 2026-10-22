@@ -1,4 +1,4 @@
-# Licits • Operação, backups e recuperação
+# NexoFiscal • Operação, backups e recuperação
 
 > **Estado:** proteção e procedimentos implementados no repositório. A implantação no Supabase real, uma rotina externa de backup, o monitoramento e o teste de restauração de arquivos devem ser configurados e validados antes de considerar o sistema pronto para produção.
 
@@ -14,16 +14,16 @@
 
 ## 2. Backup seguro
 
-O `scripts/backup-database.sh` exige PostgreSQL client, `age`, chave pública de destinatário `age1...` e URL privada do banco na variável `LICITS_DATABASE_URL`.
+O `scripts/backup-database.sh` exige PostgreSQL client, `age`, chave pública de destinatário `age1...` e URL privada do banco na variável `NEXOFISCAL_DATABASE_URL`.
 
 ```bash
-export LICITS_DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/postgres?sslmode=require"
-export LICITS_BACKUP_AGE_RECIPIENT="age1SUA_CHAVE_PUBLICA_AQUI"
-export LICITS_BACKUP_DIR="/local/privado/licit-backups"
+export NEXOFISCAL_DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/postgres?sslmode=require"
+export NEXOFISCAL_BACKUP_AGE_RECIPIENT="age1SUA_CHAVE_PUBLICA_AQUI"
+export NEXOFISCAL_BACKUP_DIR="/local/privado/licit-backups"
 bash scripts/backup-database.sh
 ```
 
-A senha e a chave privada da criptografia **não devem entrar no GitHub ou no histórico do terminal**; configure as variáveis por um gerenciador de segredos. Para copiar o backup criptografado para armazenamento externo configurado com versionamento e proteção contra exclusões, utilize `LICITS_BACKUP_S3_URI` com credenciais temporárias de privilégio mínimo. O script gera arquivo `.age` e `.sha256` e valida a estrutura do dump; **não afirma que o restore foi testado**.
+A senha e a chave privada da criptografia **não devem entrar no GitHub ou no histórico do terminal**; configure as variáveis por um gerenciador de segredos. Para copiar o backup criptografado para armazenamento externo configurado com versionamento e proteção contra exclusões, utilize `NEXOFISCAL_BACKUP_S3_URI` com credenciais temporárias de privilégio mínimo. O script gera arquivo `.age` e `.sha256` e valida a estrutura do dump; **não afirma que o restore foi testado**.
 
 **Atenção:** `pg_dump` inclui metadados Storage no PostgreSQL, **mas não os bytes dos objetos**. Configure exportação independente dos buckets privados `contracts`, `fiscal-records`, `occurrences`, `generated-documents`, `organization-assets`, mantendo identificadores/prefixos, regras LGPD e criptografia. Sem isso, a restauração é incompleta.
 
