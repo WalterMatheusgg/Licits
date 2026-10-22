@@ -103,3 +103,41 @@ curl -X POST 'https://nefimqoszcidsnqvlnnh.supabase.co/functions/v1/integration-
 A criação utiliza a identidade do usuário autenticado e o `organization_id` validado no backend, nunca uma chave da OpenAI. A resposta bem-sucedida tem HTTP 201. Contratos com mesmo número são recusados com HTTP 409 (verificação preliminar e índice único no banco).
 
 O fornecedor e o contrato são criados na mesma RPC transacional; número duplicado reverte a operação inteira. Testes automatizados cobrem rollback, escopos e auditoria, mas a concorrência e o isolamento ainda precisam ser homologados no projeto Supabase de destino.
+
+
+## Ingestão de contratos recebidos de ERP (entrada autenticada)
+A operação `ingest` aceita um payload JSON de integração com campos padronizados de contratos. Não é um conector homologado para SAP, TOTVS ou outro fornecedor específico: os formatos `generic` e `br_publico` são adaptadores genéricos de campos.
+
+```json
+{
+  "operation": "ingest",
+  "organization_id": "UUID_DA_ORGANIZACAO",
+  "provider": "br_publico",
+  "payload": {
+    "numero_contrato": "123/2026",
+    "objeto": "Materiais de consumo",
+    "fornecedor": {
+      "razao_social": "Fornecedor Exemplo Ltda",
+      "cnpj": "12.345.678/0001-90"
+    },
+    "valor_total": "R$ 12.345,67"
+  }
+}
+```
+
+Envie via POST para a Edge Function `integration-contracts` com `Authorization: Bearer lct_...` e o header `apikey` publicável do projeto. A credencial deve possuir `contracts:write`. A criação é transacional; números repetidos com os mesmos dados retornam HTTP 200 (`already_exists:true`), e dados conflitantes retornam HTTP 409. O token deve ficar no cofre de segredos do integrador.
+
+A API controla até **60 chamadas por minuto por credencial**, com HTTP 429 quando o limite for excedido. O contador é persistido no PostgreSQL; a remoção periódica de contadores antigos ainda deve ser operacionalizada.
+
+Este é um **endpoint de recebimento autenticado**, que pode ser chamado por automações externas. Ele não implementa assinaturas HMAC de webhooks específicos de fornecedores, webhooks de saída nem sincronização automática por polling. Para um ERP específico, é necessário mapear seus campos e validar seu protocolo. Os formatos JSON, datas e ações disponíveis estão no [OpenAPI](openapi-integration-v1.json).
+
+## Importação documental transacional
+A partir da migração `20261022150000_atomic_contract_document_import.sql`, o NexoFiscal utiliza `import_contract_document_atomic` para registrar contrato, documento e itens em **uma transação no banco**, depois que o arquivo é carregado no Storage privado `contracts`. A função exige usuário gestor/administrador ativo da organização e arquivo pertencente ao autor do upload. Caso o banco rejeite qualquer item, a transação de metadados é revertida. O arquivo carregado no Storage permanece para possível limpeza posterior.
+
+## Pré-requisitos de implantação da versão atual
+- Revisar backup e aplicar migrations novas, inclusive `20261022150000_atomic_contract_document_import.sql` e `20261022151000_integration_rate_limit.sql`.
+- Implantar `integration-contracts` com `--no-verify-jwt`, mantendo a autenticação própria dentro do código.
+- Executar testes locais SQL e testes das Edge Functions no CI.
+- Confirmar envios reais com Resend configurado e agendador de alertas autenticado.
+
+Não declare ambiente de produção homologado sem comprovação de cada passo.
