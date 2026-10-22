@@ -24,6 +24,8 @@ jobs:
           cache: npm
       - name: Instalar dependências reproduzíveis
         run: npm ci --no-audit --no-fund
+      - name: Testar respostas fiscais locais
+        run: node --test tests/*.test.js
       - name: Verificar tipos
         run: npm run typecheck
       - name: Analisar código
