@@ -86,7 +86,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
                 exit={{ opacity: 0, width: 0 }}
                 className="overflow-hidden whitespace-nowrap"
               >
-                <h1 className="text-sm font-extrabold tracking-tight leading-tight">ContratoIA</h1>
+                <h1 className="text-sm font-extrabold tracking-tight leading-tight">NexoFiscal</h1>
                 <p className="text-[9px] text-sidebar-foreground/50 leading-tight">Gestão Contratual</p>
               </motion.div>
             )}
