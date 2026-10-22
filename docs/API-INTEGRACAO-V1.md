@@ -1,4 +1,4 @@
-# API de Integração — NexoFiscal v1
+# API de Integração — Licits v1
 
 ## Status
 Endpoint **implementado no repositório, mas ainda não implantado nem homologado** no projeto Supabase.
@@ -132,7 +132,7 @@ A API controla até **60 chamadas por minuto por credencial**, com HTTP 429 quan
 Este é um **endpoint de recebimento autenticado**, que pode ser chamado por automações externas. Ele não implementa assinaturas HMAC de webhooks específicos de fornecedores, webhooks de saída nem sincronização automática por polling. Para um ERP específico, é necessário mapear seus campos e validar seu protocolo. Os formatos JSON, datas e ações disponíveis estão no [OpenAPI](openapi-integration-v1.json).
 
 ## Importação documental transacional
-A partir da migração `20261022150000_atomic_contract_document_import.sql`, o NexoFiscal utiliza `import_contract_document_atomic` para registrar contrato, documento e itens em **uma transação no banco**, depois que o arquivo é carregado no Storage privado `contracts`. A função exige usuário gestor/administrador ativo da organização e arquivo pertencente ao autor do upload. Caso o banco rejeite qualquer item, a transação de metadados é revertida. O arquivo carregado no Storage permanece para possível limpeza posterior.
+A partir da migração `20261022150000_atomic_contract_document_import.sql`, o Licits utiliza `import_contract_document_atomic` para registrar contrato, documento e itens em **uma transação no banco**, depois que o arquivo é carregado no Storage privado `contracts`. A função exige usuário gestor/administrador ativo da organização e arquivo pertencente ao autor do upload. Caso o banco rejeite qualquer item, a transação de metadados é revertida. O arquivo carregado no Storage permanece para possível limpeza posterior.
 
 ## Pré-requisitos de implantação da versão atual
 - Revisar backup e aplicar migrations novas, inclusive `20261022150000_atomic_contract_document_import.sql` e `20261022151000_integration_rate_limit.sql`.

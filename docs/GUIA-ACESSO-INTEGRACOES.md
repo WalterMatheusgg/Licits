@@ -1,8 +1,8 @@
-# NexoFiscal 2.0 — acesso, IA e integrações
+# Licits 2.0 — acesso, IA e integrações
 
 ## Entrar no sistema (usuário final)
-1. Abra o endereço do NexoFiscal fornecido pelo administrador; no GitHub Codespaces, inicie `npm run dev -- --host 0.0.0.0` e abra a porta 5173 na aba **Ports**.
-2. Acesse **Login** e informe o e-mail e a senha da conta cadastrada em **Supabase → Authentication → Users**. O login no **painel do Supabase com GitHub** não é o mesmo login do NexoFiscal.
+1. Abra o endereço do Licits fornecido pelo administrador; no GitHub Codespaces, inicie `npm run dev -- --host 0.0.0.0` e abra a porta 5173 na aba **Ports**.
+2. Acesse **Login** e informe o e-mail e a senha da conta cadastrada em **Supabase → Authentication → Users**. O login no **painel do Supabase com GitHub** não é o mesmo login do Licits.
 3. A conta precisa ter perfil ativo em `public.profiles`, vínculo `active` em `public.organization_members` e organização `active`.
 4. Caso apareça ausência de organização, peça ao administrador para enviar um convite ou associá-lo à organização correta. Não crie organização duplicada por conta própria.
 5. Para redefinir senha, use **Esqueci minha senha**. O administrador deve configurar a URL da aplicação em Supabase Auth → URL Configuration.

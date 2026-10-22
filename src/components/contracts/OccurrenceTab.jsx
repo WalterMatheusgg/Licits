@@ -124,7 +124,7 @@ export default function OccurrenceTab({ contractId, contract }) {
   <tr><td>Status</td><td>${occ.status?.replace('_', ' ') || ''}</td></tr>
   <tr><td>Registrado por</td><td>${occ.registered_by_name || occ.registered_by || ''}</td></tr>
   <tr><td>Data do Registro</td><td>${registeredStr}</td></tr>
-  ${occ.file_url ? `<tr><td>Documento Anexo</td><td><a href="${occ.file_url}">${occ.file_name || 'Ver arquivo'}</a></td></tr>` : ''}
+  ${occ.file_url ? `<tr><td>Documento Alicits</td><td><a href="${occ.file_url}">${occ.file_name || 'Ver arquivo'}</a></td></tr>` : ''}
 </table>
 <div class="section" style="margin-top:24px">
   <div class="label">Descrição da Ocorrência</div>
@@ -259,7 +259,7 @@ export default function OccurrenceTab({ contractId, contract }) {
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{occ.content}</p>
                   {occ.file_url && (
                     <a href={occ.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 mt-1 hover:underline">
-                      <Paperclip className="w-3 h-3" />{occ.file_name || 'Ver arquivo anexo'}
+                      <Paperclip className="w-3 h-3" />{occ.file_name || 'Ver arquivo alicits'}
                     </a>
                   )}
                   {occ.registered_by_name && <p className="text-[10px] text-muted-foreground mt-1">Por: {occ.registered_by_name}</p>}

@@ -1,5 +1,5 @@
 {
-  "name": "NexoFiscal",
+  "name": "Licits",
   "site": {
     "installCommand": "npm install",
     "buildCommand": "npm run build",

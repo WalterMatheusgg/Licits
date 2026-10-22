@@ -1,6 +1,6 @@
-# NexoFiscal — evolução e validação antes da produção
+# Licits — evolução e validação antes da produção
 
-Nome de interface proposto: **NexoFiscal**. Nome do repositório e identificadores técnicos antigos permanecem para evitar quebra de URLs e integrações.
+Nome único do sistema e do repositório: **Licits**. A padronização preserva o histórico, os identificadores do banco e os nomes de segredos já provisionados.
 
 ## Correções iniciais aplicadas
 - Dashboard: valores monetários somados numericamente, tratamento explícito de falha de consulta e filtro de vencimentos validado.

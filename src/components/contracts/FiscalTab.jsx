@@ -141,7 +141,7 @@ export default function FiscalTab({ contractId, contract }) {
   <tr><td>Data da Fiscalização</td><td>${dateStr}</td></tr>
   <tr><td>Status</td><td>${r.status || ''}</td></tr>
   ${r.signed_by ? `<tr><td>Assinado por</td><td>${r.signed_by_name || r.signed_by} em ${signedStr}</td></tr>` : ''}
-  ${r.file_url ? `<tr><td>Documento Anexo</td><td><a href="${r.file_url}">${r.file_name || 'Ver arquivo'}</a></td></tr>` : ''}
+  ${r.file_url ? `<tr><td>Documento Alicits</td><td><a href="${r.file_url}">${r.file_name || 'Ver arquivo'}</a></td></tr>` : ''}
 </table>
 <div style="margin-bottom:16px"><strong>Descrição / Observações:</strong><div class="box">${r.description}</div></div>
 ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><div class="box">${r.comments}</div></div>` : ''}

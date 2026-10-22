@@ -45,7 +45,7 @@
     },
     "file_url": {
       "type": "string",
-      "description": "Arquivo anexo"
+      "description": "Arquivo alicits"
     },
     "file_name": {
       "type": "string",

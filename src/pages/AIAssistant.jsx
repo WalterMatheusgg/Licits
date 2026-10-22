@@ -11,7 +11,7 @@ import { fiscalAnswer } from '@/lib/fiscalInsights';
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Olá! Sou o assistente IA do NexoFiscal. Posso ajudar com informações sobre contratos, saldos, vencimentos, documentos e mais. Como posso ajudar?' }
+    { role: 'assistant', content: 'Olá! Sou o assistente IA do Licits. Posso ajudar com informações sobre contratos, saldos, vencimentos, documentos e mais. Como posso ajudar?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

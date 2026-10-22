@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "NexoFiscal Integration API",
+    "title": "Licits Integration API",
     "version": "1.0.0",
     "description": "API v1 por organização, com JWT Supabase ou credenciais de integração lct_. Suporta leitura, criação, atualização e ingestão genérica de ERP. Implantação e testes de homologação necessários."
   },

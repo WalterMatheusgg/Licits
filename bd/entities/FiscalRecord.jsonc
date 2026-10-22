@@ -29,7 +29,7 @@
     },
     "file_url": {
       "type": "string",
-      "description": "Documento anexo"
+      "description": "Documento alicits"
     },
     "file_name": {
       "type": "string",

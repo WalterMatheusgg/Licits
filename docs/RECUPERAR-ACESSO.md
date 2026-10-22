@@ -1,15 +1,15 @@
-# Recuperacao do login e da conexao original — NexoFiscal
+# Recuperacao do login e da conexao original — Licits
 
 ## Diagnostico do historico
 
-O ZIP de origem do NexoFiscal tinha login pelo Supabase Auth e, em paralelo, um SDK Base44 usado em fluxos de negocio. Na migracao para Supabase, o cliente de dados Base44 foi removido. O arquivo original ZIP, examinado no historico do GitHub, **nao contem .env ou .env.local** com as credenciais originais.
+O ZIP de origem do Licits tinha login pelo Supabase Auth e, em paralelo, um SDK Base44 usado em fluxos de negocio. Na migracao para Supabase, o cliente de dados Base44 foi removido. O arquivo original ZIP, examinado no historico do GitHub, **nao contem .env ou .env.local** com as credenciais originais.
 
 O repositorio GitHub esta **publico**. Nao publique .env, senhas, service role, chaves privadas ou tokens nesse repositorio, mesmo que pretenda altera-lo para privado.
 
 ## Recuperar a conexao sem criar outro banco
 
 1. Use exatamente o projeto Supabase anterior. Confira em Supabase Dashboard → Project Settings → API Keys a Project URL e uma chave publica publishable ou anon desse projeto.
-2. Se possui .env.local/.env de uma pasta antiga do NexoFiscal, importe o arquivo com:
+2. Se possui .env.local/.env de uma pasta antiga do Licits, importe o arquivo com:
 
 ~~~bash
 bash scripts/restaurar-acesso.sh --from "/CAMINHO/DA/INSTALACAO_ANTIGA/.env.local"
