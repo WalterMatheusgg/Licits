@@ -15,16 +15,25 @@ export default function ContractAIUpload({ onSave, isLoading }) {
 
   const handleUpload = async () => {
     if (!file) return;
+    if (file.size === 0 || file.size > 15 * 1024 * 1024) {
+      setErrorText('O documento deve ter entre 1 byte e 15 MB.');
+      return;
+    }
+    if (!/\.(pdf|png|jpe?g)$/i.test(file.name || '')) {
+      setErrorText('Escolha um documento PDF, PNG ou JPG.');
+      return;
+    }
+    const mimeType = file.type || (/\.pdf$/i.test(file.name) ? 'application/pdf' : /\.png$/i.test(file.name) ? 'image/png' : 'image/jpeg');
     setErrorText('');
     setExtracting(true);
     try {
       const uploaded = await dataClient.integrations.Core.UploadFile({ file });
       try {
         const fields = await extractContractDocument(file, setProgress);
-        setExtracted({ ...fields, ...uploaded, original_filename: file.name, mime_type: file.type || 'application/pdf', file_size: file.size, status: 'em_analise' });
+        setExtracted({ ...fields, ...uploaded, original_filename: file.name, mime_type: mimeType, file_size: file.size, status: 'em_analise' });
       } catch (error) {
         setErrorText(`Documento armazenado. Extração indisponível: ${error.message} Preencha os dados manualmente.`);
-        setExtracted({ ...uploaded, original_filename: file.name, mime_type: file.type || 'application/pdf', file_size: file.size, contract_number: '', object: '', supplier_name: '', supplier_cnpj: '', total_value: 0, start_date: '', end_date: '', clauses: [], items: [], status: 'em_analise' });
+        setExtracted({ ...uploaded, original_filename: file.name, mime_type: mimeType, file_size: file.size, contract_number: '', object: '', supplier_name: '', supplier_cnpj: '', total_value: 0, start_date: '', end_date: '', clauses: [], items: [], status: 'em_analise' });
       }
     } catch (error) {
       setErrorText('Falha ao enviar arquivo: ' + error.message);
