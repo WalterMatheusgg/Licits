@@ -21,10 +21,10 @@ export default function ContractAIUpload({ onSave, isLoading }) {
       const uploaded = await dataClient.integrations.Core.UploadFile({ file });
       try {
         const fields = await extractContractDocument(file, setProgress);
-        setExtracted({ ...fields, ...uploaded, status: 'em_analise' });
+        setExtracted({ ...fields, ...uploaded, original_filename: file.name, mime_type: file.type || 'application/pdf', file_size: file.size, status: 'em_analise' });
       } catch (error) {
         setErrorText(`Documento armazenado. Extração indisponível: ${error.message} Preencha os dados manualmente.`);
-        setExtracted({ ...uploaded, contract_number: '', object: '', supplier_name: '', supplier_cnpj: '', total_value: 0, start_date: '', end_date: '', clauses: [], items: [], status: 'em_analise' });
+        setExtracted({ ...uploaded, original_filename: file.name, mime_type: file.type || 'application/pdf', file_size: file.size, contract_number: '', object: '', supplier_name: '', supplier_cnpj: '', total_value: 0, start_date: '', end_date: '', clauses: [], items: [], status: 'em_analise' });
       }
     } catch (error) {
       setErrorText('Falha ao enviar arquivo: ' + error.message);
@@ -53,7 +53,7 @@ export default function ContractAIUpload({ onSave, isLoading }) {
           accept=".pdf,.png,.jpg,.jpeg"
           className="hidden"
           id="ai-upload"
-          onChange={e => setFile(e.target.files[0])}
+          onChange={e => { setFile(e.target.files?.[0] || null); setExtracted(null); setProgress(0); setErrorText(''); }}
         />
         <label htmlFor="ai-upload" className="cursor-pointer">
           <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
