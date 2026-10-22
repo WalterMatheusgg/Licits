@@ -31,7 +31,7 @@ function StatCard({ title, value, subtitle, icon: Icon, color, delay, trend, lin
   const card = (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${c.bg} p-4 lg:p-5 shadow-lg hover:scale-[1.02] transition-transform cursor-default`}
+      className={`relative overflow-hidden rounded-xl border border-border bg-card p-4 lg:p-5 shadow-sm transition-shadow hover:shadow-md cursor-default`}
     >
       <div className="flex items-start justify-between">
         <div>
@@ -39,8 +39,8 @@ function StatCard({ title, value, subtitle, icon: Icon, color, delay, trend, lin
           <p className={`text-lg sm:text-2xl lg:text-3xl font-extrabold ${c.text} break-words`}>{value}</p>
           {subtitle && <p className={`text-xs mt-1 ${c.sub}`}>{subtitle}</p>}
         </div>
-        <div className={`${c.icon} rounded-xl p-2.5`}>
-          <IconCmp className="w-6 h-6 text-white" />
+        <div className="rounded-lg bg-muted p-2.5">
+          <IconCmp className="w-5 h-5 text-muted-foreground" />
         </div>
       </div>
       {trend !== undefined && (
@@ -49,8 +49,6 @@ function StatCard({ title, value, subtitle, icon: Icon, color, delay, trend, lin
           <span>{Math.abs(trend)}% vs. mês anterior</span>
         </div>
       )}
-      <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/10" />
-      <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-white/5" />
     </motion.div>
   );
   return link ? <Link to={link}>{card}</Link> : card;
@@ -109,15 +107,15 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-2xl p-5 lg:p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-64 opacity-10 hidden sm:block">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border rounded-xl p-5 lg:p-6 text-foreground relative overflow-hidden">
+        <div className="hidden">
           <div className="w-96 h-96 rounded-full border-[40px] border-white absolute -right-20 -top-20" />
           <div className="w-64 h-64 rounded-full border-[30px] border-white absolute right-10 bottom-0" />
         </div>
         <div className="relative">
-          <p className="text-white/70 text-sm font-medium mb-1">Plataforma de Gestão</p>
+          <p className="text-muted-foreground text-sm font-medium mb-1">Plataforma de Gestão</p>
           <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight">Gestão Contratual</h1>
-          <p className="text-white/80 text-xs sm:text-sm mt-1">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             {currentUser ? `Bem-vindo, ${currentUser.full_name?.split(' ')[0] || 'usuário'} · ` : ''}
             {allItems.length} contrato(s)/ata(s) · {active.length} ativo(s)
           </p>
@@ -178,7 +176,7 @@ export default function Dashboard() {
       </section>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 lg:gap-4">
         <StatCard title="Contratos Ativos" value={active.length} icon={CheckCircle} color="primary" delay={0} link="/contracts" />
         <StatCard title="Vencendo (30d)" value={expiring.length} icon={Clock} color="warning" delay={0.05} link="/contract-table" />
         <StatCard title="Vencidos" value={expired.length} icon={AlertTriangle} color="destructive" delay={0.1} link="/contract-table" />
