@@ -110,6 +110,8 @@ As funções ficam em `supabase/functions/`. Após configurar os segredos do ser
 - [Manual de alertas fiscais](docs/ALERTAS-FISCAL.md)
 - [API de integração v1](docs/API-INTEGRACAO-V1.md)
 - [Especificação OpenAPI](docs/openapi-integration-v1.json)
+- [Verificação remota de segurança (somente leitura)](docs/HOMOLOGACAO-REMOTA.md)
+- [Publicação Vercel e Netlify com fallback de rotas](docs/HOSPEDAGEM-SPA.md)
 
 ## Arquitetura
 
@@ -141,7 +143,7 @@ node --test tests/*.test.js
 
 Há três pipelines no GitHub Actions: **Frontend**, **Supabase SQL** e **Edge Functions**. Os badges acima mostram o estado mais recente de cada pipeline; confira as execuções para localizar falhas ou testes pendentes.
 
-Os testes de banco sobem um ambiente **local descartável** e verificam migrations, isolamento entre organizações e operações contratuais. Eles **não substituem** testes ponta a ponta no navegador com o banco remoto, envio real de e-mails ou restauração integral de PostgreSQL e Storage.
+Os testes de banco sobem um ambiente **local descartável** e verificam migrations, isolamento entre organizações e operações contratuais. A auditoria duplicada foi corrigida com a migration `20261022220000_deduplicate_safe_audit.sql`. Os testes de arquitetura também bloqueiam a reintrodução de Base44 no frontend, nomes antigos e segredos expostos em variáveis VITE_. Eles **não substituem** testes ponta a ponta no navegador com o banco remoto, envio real de e-mails ou restauração integral de PostgreSQL e Storage.
 
 ## Segurança e próximos passos
 
@@ -157,6 +159,8 @@ Os testes de banco sobem um ambiente **local descartável** e verificam migratio
 | 8. CRUD de contratos, documentos, fiscalização, atas e convites | **Testes de banco existentes**; faltam testes completos da interface |
 | 9. Implantação e e-mails/IA reais | **Pendente de implantação e teste com chaves do servidor** |
 | 10. Retenção, backup, monitoramento e produção | **Guias e script de backup presentes**; rotinas reais e restore pendentes |
+
+**Pronto para produção? Ainda não.** A execução agendada dos alertas **detectou ausência de `LICITS_DISPATCH_URL` e `LICITS_ALERT_DISPATCH_SECRET` nos GitHub Actions Secrets**; os e-mails externos não foram enviados. O pipeline agora falha visivelmente quando falta configuração, em vez de aparentar sucesso. Confira [alertas e configuração](docs/ALERTAS-FISCAL.md).
 
 **Pronto para produção? Ainda não.** É necessário homologar a autenticação e os fluxos reais, comprovar as integrações externas, configurar monitoração, backups recorrentes de banco **e arquivos** e realizar teste documentado de restauração.
 
