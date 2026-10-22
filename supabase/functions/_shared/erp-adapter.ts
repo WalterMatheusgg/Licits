@@ -12,7 +12,7 @@ function parseAmount(value: unknown): number {
   if (typeof value === 'number') return value;
   if (typeof value !== 'string') return NaN;
   const raw = value.trim().replace(/^R\$\s*/i, '').replace(/\s/g, '');
-  if (/^\d{1,3}(?:\.\d{3})*,\d{1,2}$/.test(raw)) {
+  if (/^(?:\d{1,3}(?:\.\d{3})+|\d+),\d{1,2}$/.test(raw)) {
     return Number(raw.replace(/\./g, '').replace(',', '.'));
   }
   if (/^\d+(?:\.\d{1,2})?$/.test(raw)) return Number(raw);
