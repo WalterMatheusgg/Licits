@@ -33,6 +33,9 @@ Deno.serve(async req => {
         return json({error:'Credencial inválida ou expirada'},401);
       }
       credential = found.data;
+      const quota = await admin.rpc('claim_integration_request', {p_credential_id: credential.id});
+      if (quota.error) throw quota.error;
+      if (quota.data !== true) return json({error:'Limite de 60 requisições por minuto excedido'},429);
       const organization = await admin.from('organizations').select('status,deleted_at')
         .eq('id',credential.organization_id).maybeSingle();
       if (organization.error || organization.data?.status !== 'active' || organization.data?.deleted_at) {
