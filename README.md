@@ -1,15 +1,15 @@
 
-> **Novo guia:** [Acesso ao Licits, configuração da IA e integrações externas](docs/GUIA-ACESSO-INTEGRACOES.md).
+> **Novo guia:** [Acesso ao NexoFiscal, configuração da IA e integrações externas](docs/GUIA-ACESSO-INTEGRACOES.md).
 <div align="center">
 
-# 📑 LICITS
+# 📑 NEXOFISCAL
 ### Gestão de contratos, fiscalização e registros de preços
 
 **React 18 · Vite 6 · Supabase Auth · PostgreSQL · Storage · RLS**
 
-[![Frontend](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/ci.yml)
-[![Supabase SQL](https://github.com/WalterMatheusgg/Licits/actions/workflows/supabase-db-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/supabase-db-ci.yml)
-[![Edge Functions](https://github.com/WalterMatheusgg/Licits/actions/workflows/edge-functions-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/Licits/actions/workflows/edge-functions-ci.yml)
+[![Frontend](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/ci.yml/badge.svg)](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/ci.yml)
+[![Supabase SQL](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/supabase-db-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/supabase-db-ci.yml)
+[![Edge Functions](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/edge-functions-ci.yml/badge.svg)](https://github.com/WalterMatheusgg/NexoFiscal/actions/workflows/edge-functions-ci.yml)
 ![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Homologa%C3%A7%C3%A3o%20externa%20pendente-F59E0B)
@@ -22,7 +22,7 @@
 
 ## Sobre o projeto
 
-O **Licits** é uma aplicação web para acompanhamento de contratos, fornecedores, atas de registro de preços, fiscalização, ocorrências, documentos e permissões de uma organização.
+O **NexoFiscal** é uma aplicação web para acompanhamento de contratos, fornecedores, atas de registro de preços, fiscalização, ocorrências, documentos e permissões de uma organização.
 
 A migração do **código-fonte do frontend** para Supabase foi realizada. A interface deixou de importar o SDK Base44; as operações de dados passaram por um gateway Supabase com filtragem por organização e políticas **Row Level Security** no PostgreSQL.
 
@@ -31,7 +31,7 @@ A migração do **código-fonte do frontend** para Supabase foi realizada. A int
 
 ## Para o fiscal de contratos
 
-O Licits organiza o trabalho do fiscal em torno dos contratos **atribuídos a ele**, com valores, saldos, fornecedor, vigência, ocorrências, documentos e histórico de compras/utilizações.
+O NexoFiscal organiza o trabalho do fiscal em torno dos contratos **atribuídos a ele**, com valores, saldos, fornecedor, vigência, ocorrências, documentos e histórico de compras/utilizações.
 
 - **Minha carteira:** o painel mostra os contratos atribuídos e os principais riscos financeiros.
 - **Compra assistida:** antes de cada baixa, o sistema calcula preço, quantidade restante, saldo financeiro e projeção de consumo.
@@ -83,8 +83,8 @@ flowchart TD
 Requisitos: Node.js 20 ou superior, npm, conta/projeto Supabase para desenvolvimento e Supabase CLI para banco e funções.
 
 ~~~bash
-git clone https://github.com/WalterMatheusgg/Licits.git
-cd Licits
+git clone https://github.com/WalterMatheusgg/NexoFiscal.git
+cd NexoFiscal
 npm ci
 cp .env.example .env.local
 ~~~
@@ -150,7 +150,7 @@ A [CI do GitHub](.github/workflows/ci.yml) executa instalação reprodutível, l
 ## Estrutura do repositório
 
 ~~~text
-Licits/
+NexoFiscal/
 ├── src/
 │   ├── api/dataClient.js            # Gateway Supabase
 │   ├── components/                  # UI, contratos, formulários
@@ -200,7 +200,7 @@ O arquivo `scripts/backup-database.sh` gera dump PostgreSQL criptografado via ag
 
 <div align="center">
 
-**LICITS — Gestão Contratual**  
+**NEXOFISCAL — Gestão Contratual**  
 Mantido por [Walter Matheus](https://github.com/WalterMatheusgg) · [GitHub](https://github.com/WalterMatheusgg)
 
 </div>
