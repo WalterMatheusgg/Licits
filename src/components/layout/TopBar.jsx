@@ -53,7 +53,7 @@ export default function TopBar({ onMenuClick }) {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
     window.localStorage.setItem('licits.theme', darkMode ? 'dark' : 'light');
-    window.localStorage.removeItem('licits.theme');
+    // A preferência de tema permanece em licits.theme entre sessões.
   }, [darkMode]);
 
   const { data: notifications = [] } = useQuery({
