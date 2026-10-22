@@ -47,6 +47,7 @@ Deno.serve(async req => {
       user = authorized.user;
     }
     const body = await req.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return json({error:'Corpo JSON inválido'},400);
     const organization_id = String(body.organization_id || '');
     if (!/^[a-f0-9-]{36}$/i.test(organization_id)) return json({ error: 'Organização inválida' }, 400);
     const operation = String(body.operation || 'list');
