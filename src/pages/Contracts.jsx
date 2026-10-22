@@ -54,7 +54,7 @@ export default function Contracts() {
 
   useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
-  const { data: contracts = [], isLoading } = useQuery({
+  const { data: contracts = [], isLoading, isError, error: loadError } = useQuery({
     queryKey: ['contracts'],
     queryFn: () => dataClient.entities.Contract.list('-created_date'),
     initialData: [],
@@ -227,6 +227,7 @@ export default function Contracts() {
         </Select>
       </div>
 
+      {isError && <div role="alert" className="rounded-lg border border-destructive p-4 text-sm text-destructive">Não foi possível carregar os contratos: {loadError?.message}</div>}
       {isLoading ? (
         <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : (
