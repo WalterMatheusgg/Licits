@@ -41,7 +41,14 @@ const auth=await request('Authentication service','/auth/v1/health');
 if (!auth || !auth.ok) fail('Supabase Auth is not available with the supplied project configuration.');
 // Non-authenticated PostgREST requests must not disclose tenant data, even with
 // the correct public key; query a tiny projection to avoid transferring user data.
-for(const table of ['contracts','organization_members','integration_credentials']){
+const tenantTables = [
+  'organizations','organization_members','profiles','suppliers','contracts',
+  'contract_items','item_withdrawals','documents','fiscal_records','occurrences',
+  'price_registrations','price_registration_groups','admin_requests',
+  'notifications','audit_logs','integration_credentials',
+  'contract_budget_alerts','contract_expiry_alerts',
+];
+for(const table of tenantTables){
   const res=await request('Anonymous RLS: '+table,
     '/rest/v1/'+table+'?select=id&limit=1',{
       headers:{Authorization:'Bearer '+key,Accept:'application/json'}
