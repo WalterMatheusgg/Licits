@@ -6,7 +6,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Building2, Calendar, DollarSign, FileText, AlertTriangle, Sparkles, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, DollarSign, FileText, AlertTriangle, Sparkles, BarChart3, History, RefreshCcw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import ContractHistory from '@/components/contracts/ContractHistory';
+import { contractStatuses, contractStatusLabel, contractStatusDescription, contractStatusStyle } from '@/lib/contractStatus';
 import TechnicalCapabilityButton from '../components/contracts/TechnicalCapabilityButton';
 import { differenceInDays, format } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -20,7 +24,12 @@ import { LoadingState } from '@/components/common/StateView';
 export default function ContractDetail() {
   const contractId = window.location.pathname.split('/').pop();
   const [showEdit, setShowEdit] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
+  const [nextStatus, setNextStatus] = useState('');
   const queryClient = useQueryClient();
+
+  const { data: currentUser } = useQuery({ queryKey: ['contracts-user'], queryFn: () => dataClient.auth.me() });
+  const isManager = ['admin','gestor'].includes(currentUser?.role);
 
   const { data: contract, isLoading } = useQuery({
     queryKey: ['contract', contractId],
@@ -58,8 +67,19 @@ export default function ContractDetail() {
       queryClient.invalidateQueries({ queryKey: ['contract', contractId] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       setShowEdit(false);
+      queryClient.invalidateQueries({ queryKey: ['contract-history', contractId] });
       logAudit('alteracao', 'Contract', contractId, 'Contrato editado');
     }
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: status => dataClient.entities.Contract.update(contractId, { status }),
+    onSuccess: () => {
+      setShowStatus(false);
+      queryClient.invalidateQueries({ queryKey: ['contract', contractId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['contract-history', contractId] });
+    },
   });
 
   if (isLoading) {
@@ -76,10 +96,6 @@ export default function ContractDetail() {
   const availableBudget = Number(contract.total_value || 0) - Number(contract.used_value || 0);
   const money = n => Number(n || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
-  const statusColor = {
-    ativo: 'text-emerald-600', vencido: 'text-red-600',
-    encerrado: 'text-gray-600', suspenso: 'text-amber-600', em_analise: 'text-blue-600'
-  };
   const fiscalColor = { adequada: 'text-emerald-600', regular: 'text-amber-600', baixa: 'text-red-600' };
 
   return (
@@ -96,15 +112,57 @@ export default function ContractDetail() {
             <Button variant="outline" size="sm" className="gap-2"><BarChart3 className="w-4 h-4" /><span className="hidden sm:inline">Análise</span></Button>
           </Link>
           <TechnicalCapabilityButton contract={contract} contractId={contractId} />
-          <Dialog open={showEdit} onOpenChange={setShowEdit}>
-            <DialogTrigger asChild><Button variant="outline" size="sm">Editar</Button></DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Editar Contrato</DialogTitle></DialogHeader>
-              <ContractForm initialData={contract} onSave={(data) => updateMutation.mutate(data)} isLoading={updateMutation.isPending} />
-            </DialogContent>
-          </Dialog>
+          {isManager && (
+            <Dialog open={showEdit} onOpenChange={setShowEdit}>
+              <DialogTrigger asChild><Button variant="outline" size="sm">Editar informações</Button></DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
+                <DialogHeader><DialogTitle>Editar informações do contrato</DialogTitle></DialogHeader>
+                <ContractForm initialData={contract} onSave={data => updateMutation.mutate(data)} isLoading={updateMutation.isPending} />
+                {updateMutation.isError && <p role="alert" className="text-sm text-destructive">{updateMutation.error?.message}</p>}
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
+
+      {isManager && (
+        <Card className="flex flex-col gap-3 border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold">Situação atual do contrato</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={contractStatusStyle(contract.status)}>{contractStatusLabel(contract.status)}</Badge>
+              <span className="text-xs text-muted-foreground">{contractStatusDescription(contract.status)}</span>
+            </div>
+          </div>
+          <Button variant="outline" className="gap-2 sm:shrink-0" onClick={() => {
+            setNextStatus(contract.status || 'em_analise');
+            setShowStatus(true);
+          }}><RefreshCcw className="h-4 w-4" /> Alterar situação</Button>
+        </Card>
+      )}
+      {!isManager && (
+        <p className="text-sm text-muted-foreground">Situação: <strong>{contractStatusLabel(contract.status)}</strong></p>
+      )}
+      <Dialog open={showStatus} onOpenChange={setShowStatus}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Alterar situação do contrato</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            A mudança fica registrada automaticamente no histórico, com data e responsável.
+          </p>
+          <Select value={nextStatus} onValueChange={setNextStatus}>
+            <SelectTrigger aria-label="Nova situação do contrato"><SelectValue placeholder="Escolha a situação" /></SelectTrigger>
+            <SelectContent>
+              {contractStatuses.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{contractStatusDescription(nextStatus)}</p>
+          {statusMutation.isError && <p role="alert" className="text-sm text-destructive">{statusMutation.error?.message}</p>}
+          <Button disabled={!nextStatus || nextStatus===contract.status || statusMutation.isPending}
+            onClick={() => statusMutation.mutate(nextStatus)} className="w-full">
+            {statusMutation.isPending ? 'Salvando...' : 'Confirmar alteração'}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {usedPercent >= 80 && (
         <Card className={`p-4 border-l-4 ${usedPercent >= 100 ? 'border-l-red-600 bg-red-50' : 'border-l-amber-500 bg-amber-50'}`}>
@@ -157,7 +215,7 @@ export default function ContractDetail() {
             <div className="p-2 rounded-lg bg-violet-500/10"><FileText className="w-4 h-4 text-violet-600" /></div>
             <div>
               <p className="text-xs text-muted-foreground">Status</p>
-              <p className={`text-sm font-semibold capitalize ${statusColor[contract.status]}`}>{contract.status?.replace('_', ' ')}</p>
+              <Badge variant="outline" className={contractStatusStyle(contract.status)}>{contractStatusLabel(contract.status)}</Badge>
               <p className={`text-[10px] capitalize ${fiscalColor[contract.fiscal_status]}`}>Fiscalização: {contract.fiscal_status}</p>
             </div>
           </div>
@@ -184,6 +242,7 @@ export default function ContractDetail() {
           <TabsTrigger value="items">Itens ({items.length})</TabsTrigger>
           <TabsTrigger value="fiscal">Fiscalização ({fiscalRecords.length})</TabsTrigger>
           <TabsTrigger value="occurrences">Ocorrências ({occurrences.length})</TabsTrigger>
+          <TabsTrigger value="history" className="gap-1"><History className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="items" className="mt-4">
@@ -196,6 +255,9 @@ export default function ContractDetail() {
 
         <TabsContent value="occurrences" className="mt-4">
           <OccurrenceTab contractId={contractId} contract={contract} />
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <ContractHistory contractId={contractId} />
         </TabsContent>
       </Tabs>
     </div>
