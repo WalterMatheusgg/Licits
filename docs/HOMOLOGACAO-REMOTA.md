@@ -22,3 +22,13 @@ O script verifica conectividade de Supabase Auth e se requisições **anônimas*
 7. Configurar alertas de indisponibilidade, backlog de e-mails, backups e incidentes; aprovar retenção/LGPD.
 
 **Não aplique `supabase db push` na produção sem backup e homologação.**
+
+## Conferência de auditoria no banco vinculado
+
+A migration `20261022220000_deduplicate_safe_audit.sql` deve constar como aplicada no remoto **antes** de executar a verificação abaixo. Ela remove triggers antigos, mas não remove registros históricos que possam conter dados sensíveis.
+
+A consulta de `scripts/verify-audit-readonly.sql` **não altera registros**: verifica os gatilhos seguros, a ausência dos gatilhos antigos e imprime apenas a contagem de registros históricos com chaves potencialmente sensíveis, nunca seus valores.
+
+Use o SQL Editor do projeto de **homologação** para executar o script, depois confira `npx supabase migration list` e as versões em `npx supabase functions list` no terminal autenticado. O sucesso no GitHub Actions significa somente que a migração passou no banco descartável da CI, não que foi implantada no Supabase real.
+
+Se a contagem histórica for positiva, trate a retenção/expurgo com o responsável por LGPD e o administrador do banco; não apague a trilha de auditoria indiscriminadamente.
