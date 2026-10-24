@@ -43,6 +43,23 @@ test('Mandatory tenant-scoped database operations remain implemented',()=>{
   assert.match(client,/supabase\.storage/);
 });
 
+test('Deleted users are removed from the organization user list',()=>{
+  const client=read('src/api/dataClient.js');
+  assert.match(client,/if \(name === 'User'\) return updateMember\(id, \{ status: 'inativo' \}, ctx\)/);
+  assert.match(client,/query\.neq\('status', 'revoked'\)/);
+});
+
+test('Revoked users can be reactivated separately from a resent invitation',()=>{
+  const client=read('src/api/dataClient.js');
+  const page=read('src/pages/Users.jsx');
+  const invite=read('supabase/functions/invite-member/index.ts');
+  assert.match(client,/listRevoked: \(\) => listUsers\('revoked'\)/);
+  assert.match(page,/Reativar acesso/);
+  assert.match(page,/Novo convite/);
+  assert.match(invite,/generateLink\(\{type:'magiclink',email\}\)/);
+  assert.match(invite,/sendConfiguredEmail\(\{/);
+});
+
 test('Accounting, isolation and delivery logic are tested in PostgreSQL CI',()=>{
   const workflow=read('.github/workflows/supabase-db-ci.yml');
   for(const file of ['tenant_isolation_integration.sql',

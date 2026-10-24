@@ -291,10 +291,14 @@ async function remove(name, id) {
   if (!ok) return fail('Não foi possível arquivar o registro.');
   return { id, archived: true };
 }
-async function listUsers() {
+async function listUsers(status = null) {
   const ctx = await context();
-  const members = unwrap(await supabase.from('organization_members')
-    .select('user_id,role,status').eq('organization_id', ctx.org));
+  let query = supabase.from('organization_members')
+    .select('user_id,role,status').eq('organization_id', ctx.org);
+  query = status
+    ? query.eq('status', status)
+    : query.neq('status', 'revoked');
+  const members = unwrap(await query);
   if (!members.length) return [];
   const profiles = unwrap(await supabase.from('profiles').select('id,full_name,email,status').in('id', members.map(m => m.user_id)));
   const byId = Object.fromEntries(profiles.map(p => [p.id,p]));
@@ -410,7 +414,8 @@ export const dataClient = {
     inviteUser: async (email, role) => {
       const ctx = await context();
       return invokeFunction('invite-member', { email, role: roleForDB(role), organization_id: ctx.org });
-    }
+    },
+    listRevoked: () => listUsers('revoked'),
   },
   integrations: { Core: {
     UploadFile: uploadFile,

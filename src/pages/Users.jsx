@@ -36,6 +36,13 @@ export default function Users() {
     queryFn: () => dataClient.entities.User.list(),
     initialData: [],
   });
+  const isAdmin = currentUser?.role === 'admin';
+  const { data: revokedUsers = [], isLoading: isLoadingRevoked } = useQuery({
+    queryKey: ['revoked-users'],
+    queryFn: () => dataClient.users.listRevoked(),
+    enabled: isAdmin,
+    initialData: [],
+  });
 
   const filtered = users.filter(u => {
     if (!search) return true;
@@ -47,12 +54,13 @@ export default function Users() {
     const role = inviteRole;
     try {
       const result = await dataClient.users.inviteUser(inviteEmail, role);
-      window.alert(result?.email_sent
-        ? 'Convite registrado; solicitação de e-mail enviada ao Supabase. O acesso depende do aceite.'
-        : 'Convite pendente. Avise a pessoa já cadastrada para entrar no Licits e clicar em Aceitar convite.');
+      window.alert(result?.existing_user
+        ? 'Um link de acesso foi enviado para o e-mail cadastrado. Depois de entrar, a pessoa precisa aceitar o convite da organização.'
+        : 'O convite foi enviado. O acesso depende de a pessoa entrar e aceitar o convite da organização.');
       setShowInvite(false);
       setInviteEmail('');
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
     } catch (error) {
       alert('Não foi possível enviar o convite: ' + error.message);
     } finally {
@@ -60,16 +68,29 @@ export default function Users() {
     }
   };
 
-  const isAdmin = currentUser?.role === 'admin';
-
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => dataClient.entities.User.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => dataClient.entities.User.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+    },
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: (id) => dataClient.entities.User.update(id, { status: 'ativo' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+    },
+    onError: (error) => window.alert('Não foi possível reativar o acesso: ' + error.message),
   });
 
   return (
@@ -87,6 +108,9 @@ export default function Users() {
                 <DialogHeader><DialogTitle>Convidar Usuário</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   <div><Label>E-mail</Label><Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@exemplo.com" /></div>
+                  <p className="text-sm text-muted-foreground">
+                    Para uma conta já cadastrada, será enviado um link de acesso e um novo convite pendente. Isso não reativa automaticamente o vínculo.
+                  </p>
                   <div><Label>Nível de Acesso</Label>
                     <Select value={inviteRole} onValueChange={setInviteRole}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -98,7 +122,7 @@ export default function Users() {
                     </Select>
                   </div>
                   <Button onClick={handleInvite} disabled={!inviteEmail || inviting} className="w-full">
-                    {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar Convite'}
+                    {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar / reenviar convite'}
                   </Button>
                 </div>
               </DialogContent>
@@ -111,6 +135,61 @@ export default function Users() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder="Buscar usuários..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
       </div>
+
+      {isAdmin && (isLoadingRevoked || revokedUsers.length > 0) && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Acesso revogado</h2>
+            <p className="text-sm text-muted-foreground">
+              Usuários removidos da lista principal. Reativar restaura o acesso imediatamente; reenviar convite exige que a pessoa aceite novamente.
+            </p>
+          </div>
+          {isLoadingRevoked ? (
+            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
+          ) : revokedUsers.map((u) => (
+            <Card key={u.id} className="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">{u.full_name || 'Sem nome'}</p>
+                <p className="text-xs text-muted-foreground">{u.email}</p>
+              </div>
+              <div className="flex gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={reactivateMutation.isPending}>
+                      Reativar acesso
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reativar acesso?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {u.full_name || u.email} voltará a ter acesso imediatamente à organização.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => reactivateMutation.mutate(u.id)}>
+                        Reativar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setInviteEmail(u.email || '');
+                    setInviteRole(u.role || 'operacional');
+                    setShowInvite(true);
+                  }}
+                >
+                  <Mail className="w-3 h-3 mr-1" /> Novo convite
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </section>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>
