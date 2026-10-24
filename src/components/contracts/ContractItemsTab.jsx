@@ -172,12 +172,12 @@ export default function ContractItemsTab({ contractId, contract }) {
               <DialogContent className="max-w-2xl">
                 <DialogHeader><DialogTitle>Cadastrar Item</DialogTitle></DialogHeader>
                 <form onSubmit={e => { e.preventDefault(); addMutation.mutate({ ...form, contracted_qty: parseFloat(form.contracted_qty)||0, min_qty: parseFloat(form.min_qty)||0, unit_price: parseFloat(form.unit_price)||0 }); }} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div><Label>Nº do Grupo</Label><Input value={form.group_number} onChange={e => setForm(p=>({...p,group_number:e.target.value}))} placeholder="Ex: 01" /></div>
                     <div><Label>Nº do Item</Label><Input value={form.item_number} onChange={e => setForm(p=>({...p,item_number:e.target.value}))} placeholder="Ex: 001" /></div>
                   </div>
                   <div><Label>Especificação *</Label><Input value={form.description} onChange={e => setForm(p=>({...p,description:e.target.value}))} required placeholder="Descreva o item" /></div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div><Label>Unidade</Label><Input value={form.unit} onChange={e => setForm(p=>({...p,unit:e.target.value}))} placeholder="UN, KG..." /></div>
                     <div><Label>Qtd Total *</Label><Input type="number" min="0" step="0.01" value={form.contracted_qty} onChange={e => setForm(p=>({...p,contracted_qty:e.target.value}))} required /></div>
                     <div><Label>Qtd Mínima</Label><Input type="number" min="0" step="0.01" value={form.min_qty} onChange={e => setForm(p=>({...p,min_qty:e.target.value}))} /></div>
@@ -337,12 +337,12 @@ export default function ContractItemsTab({ contractId, contract }) {
                                 <DialogHeader><DialogTitle>Editar Item</DialogTitle></DialogHeader>
                                 {editForm && (
                                   <form onSubmit={e => { e.preventDefault(); editMutation.mutate({ id: item.id, data: { ...editForm, contracted_qty: parseFloat(editForm.contracted_qty)||0, min_qty: parseFloat(editForm.min_qty)||0, unit_price: parseFloat(editForm.unit_price)||0 }}); }} className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                       <div><Label>Nº do Grupo</Label><Input value={editForm.group_number||''} onChange={e => setEditForm(p=>({...p,group_number:e.target.value}))} /></div>
                                       <div><Label>Nº do Item</Label><Input value={editForm.item_number||''} onChange={e => setEditForm(p=>({...p,item_number:e.target.value}))} /></div>
                                     </div>
                                     <div><Label>Especificação *</Label><Input value={editForm.description||''} onChange={e => setEditForm(p=>({...p,description:e.target.value}))} required /></div>
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                       <div><Label>Unidade</Label><Input value={editForm.unit||''} onChange={e => setEditForm(p=>({...p,unit:e.target.value}))} /></div>
                                       <div><Label>Qtd Total</Label><Input type="number" min="0" step="0.01" value={editForm.contracted_qty||''} onChange={e => setEditForm(p=>({...p,contracted_qty:e.target.value}))} /></div>
                                       <div><Label>Qtd Mínima</Label><Input type="number" min="0" step="0.01" value={editForm.min_qty||''} onChange={e => setEditForm(p=>({...p,min_qty:e.target.value}))} /></div>

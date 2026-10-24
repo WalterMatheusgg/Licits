@@ -183,7 +183,7 @@ deno test supabase/functions/_shared/*.test.ts
 | **Edge Functions** | Testes Deno de segurança, destinatários, adaptadores e validação de tipos |
 | **Supabase SQL** | Migrations, regressões e cenários transacionais em CI |
 
-**Homologação:** os pipelines de frontend e Edge Functions foram aprovados nas execuções recentes. O pipeline SQL apresentou falha e deve ser diagnosticado antes da aprovação para produção. Testes locais não substituem validação ponta a ponta, RLS remoto, e-mails reais e restauração de backups.
+**Homologação (24/10/2026):** o commit `0acc7a1` da branch `main` apresentou os três pipelines aprovados (frontend, Edge Functions e Supabase SQL). A aprovação de CI **não** equivale à homologação funcional, de segurança ou operacional em produção. A mudança de responsividade desta revisão exige validação adicional em dispositivos reais. Testes locais não substituem validação ponta a ponta, RLS remoto, e-mails reais e restauração de backups.
 
 ## 🔐 Segurança
 
@@ -194,9 +194,17 @@ deno test supabase/functions/_shared/*.test.ts
 - Auditoria, verificação de destinatários e tratamento seguro de erros.
 - Tokens de provedores e chaves administrativas **nunca** versionados ou expostos em `VITE_`.
 
-**Pronto para produção? Ainda não.** É necessário solucionar o CI SQL, validar fluxos e isolamento no ambiente remoto, comprovar entrega dos alertas automáticos, manter OAuth estável, configurar monitoramento e testar restauração integral de banco e arquivos.
+**Pronto para produção? Ainda não.** É necessário validar fluxos completos e isolamento entre organizações e papéis no ambiente remoto, comprovar a entrega automática dos alertas, manter OAuth estável, configurar monitoramento, verificar acessibilidade/responsividade em dispositivos reais e testar a restauração integral de banco e arquivos. O CI SQL do commit `0acc7a1` já foi aprovado.
 
 [Políticas de segurança](docs/SECURITY.md) · [Homologação remota](docs/HOMOLOGACAO-REMOTA.md) · [Backup e restauração](docs/PRODUCAO-RECUPERACAO.md)
+
+## 📱 Responsividade e acessibilidade
+
+A interface adapta navegação, barras de ferramentas, seletores de organização, abas horizontais, formulários, tabelas e diálogos a telas estreitas. O menu mobile fecha ao navegar ou ao pressionar Escape; a seleção de organização e a busca estão disponíveis também no celular.
+
+**Critérios de aceite a validar em dispositivos reais:** larguras de 320, 360, 375, 390, 430 e 768 px; rolagem horizontal dentro das tabelas e barras de abas (não na página toda); abertura de formulários; seleção de organização; navegação por teclado; funcionamento de contratos, ARPs, compras, fiscalização, usuários, notificações e auditoria.
+
+[Estado de homologação e pendências (24/10/2026)](docs/STATUS-HOMOLOGACAO-2026-10-24.md)
 
 ## 🔄 Sincronizar Codespaces e GitHub
 

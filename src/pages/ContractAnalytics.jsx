@@ -118,7 +118,7 @@ export default function ContractAnalytics() {
       </div>
 
       {/* KPI summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Valor Total', value: fmtBRL(contract.total_value), sub: `${usedPercent.toFixed(0)}% utilizado`, color: 'bg-blue-500' },
           { label: 'Dias Restantes', value: daysLeft !== null ? `${daysLeft}d` : '—', sub: contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : '—', color: daysLeft !== null && daysLeft < 30 ? 'bg-red-500' : 'bg-emerald-500' },

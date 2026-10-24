@@ -180,7 +180,7 @@ export default function ContractDetail() {
 
       {/* Tabs */}
       <Tabs defaultValue="items">
-        <TabsList className="flex-wrap h-auto gap-1">
+        <TabsList className="h-auto gap-1">
           <TabsTrigger value="items">Itens ({items.length})</TabsTrigger>
           <TabsTrigger value="fiscal">Fiscalização ({fiscalRecords.length})</TabsTrigger>
           <TabsTrigger value="occurrences">Ocorrências ({occurrences.length})</TabsTrigger>
