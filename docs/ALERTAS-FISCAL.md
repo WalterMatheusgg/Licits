@@ -1,6 +1,6 @@
 # Alertas orçamentários para fiscais
 
-**Situação:** o PostgreSQL gera alertas de orçamento ao cruzar **80%, 90% ou 100%** e alertas de vencimento a **30, 7, 1 dia e no dia do término**. O worker verifica a fila a cada 30 minutos. O disparo real por e-mail depende da função `dispatch-budget-alerts` implantada, provedor Resend configurado e secrets do agendamento.
+**Situação:** o PostgreSQL gera alertas de orçamento ao cruzar **80%, 90% ou 100%** e alertas de vencimento a **30, 7, 1 dia e no dia do término**. O worker verifica a fila a cada 30 minutos. O disparo real por e-mail depende da função `dispatch-budget-alerts` implantada, provedor Resend ou Gmail API configurado e secrets do agendamento.
 
 ## Funcionamento
 
@@ -43,3 +43,25 @@ Os testes Deno de políticas de destinatários e idempotência são executados p
 ## Melhoria planejada de produção
 
 O serviço usa chave de idempotência por destinatário ao falar com o Resend, evitando reenvio ao repetir tentativas quando o provedor respeita a chave. A fila registra sucesso ou erro e faz novas tentativas. Para produção de maior escala, mover o agendamento para Supabase Cron, inserir tabela de entrega por destinatário e monitorar taxa de rejeição.
+
+
+## Alternativa sem domínio próprio: Gmail API
+
+A API Gmail aceita destinatários em outros provedores de e-mail sem comprar ou verificar domínio de remetente. A conta Google autorizada é o remetente e está sujeita a limites antispam (contas pessoais: cerca de 500 mensagens/dia, além de outras restrições). Para mensagens automáticas o OAuth precisa de refresh token e escopo mínimo gmail.send.
+
+Configuração sem compartilhar segredos:
+
+1. Crie/abra um projeto em https://console.cloud.google.com/apis/library/gmail.googleapis.com e ative Gmail API.
+2. Configure a tela OAuth Consent e crie um OAuth Client ID do tipo Web application. Cadastre o Redirect URI: https://developers.google.com/oauthplayground
+3. No navegador, abra https://developers.google.com/oauthplayground, nas configurações habilite Use your own OAuth credentials e preencha Client ID e Client Secret.
+4. Autorize apenas o escopo https://www.googleapis.com/auth/gmail.send usando o Gmail remetente. Troque o código por tokens no OAuth Playground e guarde o refresh token com segurança.
+5. Atenção: em OAuth Testing, refresh tokens podem expirar em sete dias; para automação contínua, revise o status de publicação e a necessidade de verificação do Google (gmail.send é escopo sensível).
+6. Execute no Codespaces: bash scripts/configurar-gmail.sh; informe Gmail remetente, OAuth Client ID, Client Secret e Refresh Token. O script oculta os segredos e grava em Supabase EMAIL_PROVIDER=gmail, GMAIL_FROM_EMAIL, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET e GMAIL_REFRESH_TOKEN.
+7. Faça deploy: npx supabase functions deploy send-email; e npx supabase functions deploy dispatch-budget-alerts --no-verify-jwt. O dispatcher continua autenticando com X-Alert-Token, mesmo com JWT desabilitado.
+8. Como organization_admin/gestor ativo, teste uma mensagem real pela função autenticada send-email para um e-mail externo de teste, confira o ID de envio, a pasta Enviados do Gmail remetente e a chegada ao destinatário. Teste alertas automáticos somente com contrato fictício e destinatários autorizados.
+
+Em EMAIL_PROVIDER=gmail, o adaptador usa Gmail API; sem EMAIL_PROVIDER, continua Resend como padrão. Para enviar e-mail manual, gestores e administradores autorizados não precisam que o destinatário pertença à organização, mas a operação continua autenticada, vinculada à organização e limitada por capacidade. Alertas de contratos continuam restritos ao fiscal atribuído e administradores ativos. Convites novos de invite-member são enviados por Supabase Auth, cujo SMTP é uma configuração independente.
+
+Cuidado com retentativas: Gmail API não tem o mesmo mecanismo de Idempotency-Key do Resend; se uma tentativa enviar a mensagem e falhar antes do retorno, o reprocessamento pode gerar duplicata. Para produção em maior escala, implemente entrega persistida por destinatário. A API aceitar a mensagem não comprova recebimento final na caixa de entrada.
+
+Fontes: https://developers.google.com/workspace/gmail/api/guides/sending ; https://developers.google.com/identity/protocols/oauth2/web-server ; https://developers.google.com/workspace/gmail/api/auth/scopes ; https://support.google.com/mail/answer/22839?hl=pt-br
