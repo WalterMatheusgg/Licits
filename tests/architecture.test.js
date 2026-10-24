@@ -80,7 +80,7 @@ test('Invitations send verified one-time links to the public application without
   assert.match(invite,/generateLink\(\{type,email\}\)/);
   assert.match(invite,/type=existingId \? 'magiclink' : 'invite'/);
   assert.match(invite,/properties\.hashed_token/);
-  assert.match(invite,/confirm\.searchParams\.set\('token_hash'/);
+  assert.match(invite,/confirm\.hash=new URLSearchParams/);
   assert.match(invite,/sendConfiguredEmail/);
   assert.doesNotMatch(invite,/inviteUserByEmail\(/);
   assert.doesNotMatch(invite,/req\.headers\.get\(['"](?:origin|host)['"]\)/i);
@@ -92,6 +92,7 @@ test('One-time invite verification requires a person to confirm and can set a pa
   const password=read('src/pages/auth/UpdatePassword.jsx');
   assert.match(app,/path="\/auth\/confirm"/);
   assert.match(confirm,/supabase\.auth\.verifyOtp/);
+  assert.match(confirm,/window\.location\.hash\.slice\(1\)/);
   assert.match(confirm,/window\.history\.replaceState/);
   assert.match(confirm,/onClick=\{confirm\}/);
   assert.match(confirm,/update-password\?source=invite/);
