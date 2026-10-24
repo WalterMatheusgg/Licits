@@ -46,8 +46,8 @@ test('Mandatory tenant-scoped database operations remain implemented',()=>{
 test('Deleted users are removed from the organization user list',()=>{
   const client=read('src/api/dataClient.js');
   assert.match(client,/if \(name === 'User'\) return invokeFunction\('delete-user'/);
-  assert.match(client,/query\.neq\('status', 'revoked'\)/);
-  assert.match(client,/query\.neq\('status', 'suspended'\)/);
+  assert.match(client,/\.neq\('status', 'revoked'\)/);
+  assert.match(client,/\.neq\('status', 'suspended'\)/);
 });
 
 test('Blocked users are listed separately and can be unblocked',()=>{
@@ -59,18 +59,18 @@ test('Blocked users are listed separately and can be unblocked',()=>{
   assert.doesNotMatch(page,/Acesso revogado/);
 });
 
-test('User deletion preserves authored records and removes only the auth profile',()=>{
+test('User removal keeps the Auth identity and historical data in other organizations',()=>{
   const deletion=read('supabase/functions/delete-user/index.ts');
-  const migration=read('supabase/migrations/20261024050000_preserve_history_on_user_deletion.sql');
-  assert.match(deletion,/admin\.auth\.admin\.deleteUser\(targetId\)/);
-  assert.match(deletion,/An administrator cannot delete their own account/);
-  assert.match(migration,/occurrences/);
-  assert.match(migration,/admin_requests/);
-  assert.match(migration,/item_withdrawals/);
-  assert.match(migration,/ai_analysis_jobs/);
-  assert.match(migration,/integration_credentials/);
-  assert.match(migration,/on delete set null/i);
-  assert.match(migration,/integration_usage_user_id_fkey/);
+  const migration=read('supabase/migrations/20261024053500_safe_org_membership_removal.sql');
+  const page=read('src/pages/Users.jsx');
+  assert.match(deletion,/\.from\('organization_members'\)/);
+  assert.match(deletion,/\.delete\(\)\.eq\('organization_id',organizationId\)/);
+  assert.doesNotMatch(deletion,/auth\.admin\.deleteUser\(/);
+  assert.match(deletion,/targetId===user\.id/);
+  assert.match(migration,/protect_last_active_admin_delete/);
+  assert.match(migration,/profiles_select_organization_invitees_for_admin/);
+  assert.match(page,/Excluir acesso/);
+  assert.match(page,/Usuários bloqueados/);
 });
 
 test('Accounting, isolation and delivery logic are tested in PostgreSQL CI',()=>{
@@ -78,7 +78,7 @@ test('Accounting, isolation and delivery logic are tested in PostgreSQL CI',()=>
   for(const file of ['tenant_isolation_integration.sql',
     'budget_alerts_integration.sql','invitations_quotas_integration.sql',
     'integration_contract_create.sql','atomic_document_import_integration.sql',
-    'user_deletion_preserves_history.sql']){
+    'organization_membership_removal_integration.sql']){
     assert.ok(existsSync(join(root,'supabase/tests',file)));
     assert.ok(workflow.includes(file),'CI omitted '+file);
   }
