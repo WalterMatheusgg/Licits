@@ -203,12 +203,12 @@ deno test supabase/functions/_shared/*.test.ts
 Há um script para manter `main` sincronizada **nos dois sentidos**, sem descartar arquivos locais e sem executar `push --force`:
 
 ```bash
-git switch main
-git pull --ff-only origin main
-bash scripts/sincronizar-github.sh
+git fetch origin main
+git show origin/main:scripts/sincronizar-github.sh > /tmp/licits-sync.sh
+bash /tmp/licits-sync.sh
 ```
 
-Ele verifica alterações locais, solicita confirmação antes de criar commit, incorpora o `origin/main` e publica os commits pendentes. Se houver conflitos ou outra branch com trabalho não integrado, revise antes de enviar. Nunca confirme arquivos com segredos.
+Esse procedimento lê a versão mais recente do script diretamente da `origin/main`, mesmo que o Codespaces ainda não tenha recebido o arquivo. Ele verifica alterações locais, solicita confirmação antes de criar commit, incorpora o `origin/main` e publica os commits pendentes. Se houver conflitos ou outra branch com trabalho não integrado, revise antes de enviar. Nunca confirme arquivos com segredos.
 
 ## 📚 Documentação
 
