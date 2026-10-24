@@ -40,6 +40,16 @@ Depois do primeiro deploy e da confirmação do domínio real:
 5. Conferir os templates de convite, recuperação e confirmação: o link de verificação recomendado usa `{{ .ConfirmationURL }}`; templates customizados que apontam diretamente para `{{ .SiteURL }}` podem divergir do `redirectTo`.
 6. Reenviar convites emitidos com URL antiga ou expirados.
 
+### Edge Function de convites
+
+A função `invite-member` suporta a variável **somente no Supabase Edge Functions** `PUBLIC_APP_URL`, configurada com a **origem exata** `https://<DOMINIO-VERCEL-REAL>`. Quando preenchida, a função solicita ao Supabase Auth o redirecionamento explícito tanto para convites novos quanto para magic links de contas existentes.
+
+- Configurar `PUBLIC_APP_URL` nas **Edge Function Secrets** do Supabase somente após publicar e verificar o domínio.
+- O valor deve corresponder a um dos **Redirect URLs** permitidos no Supabase Auth; URLs não permitidas podem fazer o Supabase usar o Site URL como fallback.
+- Nunca usar um endereço fornecido pelo cliente, `Origin` ou `Host` como fonte do redirect.
+- Caso `PUBLIC_APP_URL` ainda não esteja configurada, o Supabase Auth utiliza a configuração de **Site URL** hospedada. Não deixar essa configuração apontando para `localhost:3000`.
+- Não adicionar `PUBLIC_APP_URL` como segredo em `VITE_*` nem confiar em domínios de preview como URL de produção.
+
 A confirmação de e-mail do **Supabase Auth** não é a mesma coisa que aceitar o convite da organização. Após confirmar e efetuar login, o convidado aceita o vínculo `invited` no Licits; só então seu status muda para `active`.
 
 ## Checklist de verificação
