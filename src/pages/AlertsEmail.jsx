@@ -8,6 +8,41 @@ import { Mail, Clock, Package, CheckCircle, Loader2, AlertTriangle } from 'lucid
 import { differenceInDays } from 'date-fns';
 import { motion } from 'framer-motion';
 
+const escapeEmailHtml = (value) => String(value ?? '').replace(/[&<>"']/g, char =>
+  ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char])
+);
+
+const plainTextSummary = (user, expiringContracts, lowItems) => {
+  const rows = [
+    'LICITS — ALERTAS DE GESTÃO CONTRATUAL',
+    '',
+    'Olá, ' + (user.full_name || user.email) + '.',
+    'Resumo de acompanhamento contratual:',
+    '',
+  ];
+  if (expiringContracts.length) {
+    rows.push('CONTRATOS PRÓXIMOS DO VENCIMENTO');
+    for (const contract of expiringContracts) {
+      rows.push('- ' + contract.contract_number + ' | ' + contract.supplier_name +
+        ' | Vigência: ' + contract.end_date);
+    }
+    rows.push('');
+  }
+  if (lowItems.length) {
+    rows.push('ITENS COM SALDO CRÍTICO (80% OU MAIS CONSUMIDO)');
+    for (const item of lowItems) {
+      const consumed = ((Number(item.used_qty) || 0) / Number(item.contracted_qty) * 100).toFixed(0);
+      rows.push('- ' + item.description + ' | Consumido: ' + consumed + '%');
+    }
+    rows.push('');
+  }
+  if (!expiringContracts.length && !lowItems.length) {
+    rows.push('Nenhum alerta crítico identificado no momento.', '');
+  }
+  rows.push('Mensagem gerada pelo Licits em ' + new Date().toLocaleString('pt-BR') + '.');
+  return rows.join('\n');
+};
+
 export default function AlertsEmail() {
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
@@ -69,25 +104,25 @@ export default function AlertsEmail() {
 
       // Build email body
       let body = `<h2 style="color:#1e40af">Licits — Alertas de Gestão Contratual</h2>`;
-      body += `<p>Olá, <strong>${user.full_name || user.email}</strong>.</p>`;
+      body += `<p>Olá, <strong>${escapeEmailHtml(user.full_name || user.email)}</strong>.</p>`;
       body += `<p>Abaixo estão os alertas identificados automaticamente pelo sistema:</p>`;
 
       if (expiringContracts.length > 0) {
         body += `<h3 style="color:#d97706">⚠️ Contratos Próximos do Vencimento (60 dias)</h3><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr style="background:#f3f4f6"><th>Contrato</th><th>Empresa</th><th>Vigência</th><th>Dias Restantes</th></tr>`;
         for (const c of expiringContracts) {
           const days = differenceInDays(new Date(c.end_date), new Date());
-          body += `<tr><td>${c.contract_number}</td><td>${c.supplier_name}</td><td>${c.end_date}</td><td style="color:${days <= 30 ? '#dc2626' : '#d97706'};font-weight:bold">${days} dias</td></tr>`;
+          body += `<tr><td>${escapeEmailHtml(c.contract_number)}</td><td>${escapeEmailHtml(c.supplier_name)}</td><td>${escapeEmailHtml(c.end_date)}</td><td style="color:${days <= 30 ? '#dc2626' : '#d97706'};font-weight:bold">${days} dias</td></tr>`;
         }
         body += `</table>`;
       }
 
       if (lowItems.length > 0) {
-        body += `<h3 style="color:#dc2626" style="margin-top:24px">🔴 Itens com Saldo Crítico (≥80% consumido)</h3><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr style="background:#f3f4f6"><th>Contrato</th><th>Especificação</th><th>Utilizado</th><th>Disponível</th></tr>`;
+        body += `<h3 style="color:#dc2626;margin-top:24px">🔴 Itens com Saldo Crítico (≥80% consumido)</h3><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr style="background:#f3f4f6"><th>Contrato</th><th>Especificação</th><th>Utilizado</th><th>Disponível</th></tr>`;
         for (const item of lowItems) {
           const c = getContractForItem(item);
           const pct = ((item.used_qty || 0) / item.contracted_qty * 100).toFixed(0);
           const available = item.contracted_qty - (item.used_qty || 0);
-          body += `<tr><td>${c?.contract_number || '—'}</td><td>${item.description}</td><td style="color:#dc2626;font-weight:bold">${pct}%</td><td>${available.toLocaleString('pt-BR')} ${item.unit || ''}</td></tr>`;
+          body += `<tr><td>${escapeEmailHtml(c?.contract_number || '—')}</td><td>${escapeEmailHtml(item.description)}</td><td style="color:#dc2626;font-weight:bold">${pct}%</td><td>${available.toLocaleString('pt-BR')} ${escapeEmailHtml(item.unit || '')}</td></tr>`;
         }
         body += `</table>`;
       }
@@ -101,7 +136,8 @@ export default function AlertsEmail() {
       await dataClient.integrations.Core.SendEmail({
         to: user.email,
         subject: `[Licits] ${expiringContracts.length} contrato(s) vencendo • ${lowItems.length} item(s) crítico(s)`,
-        body,
+        body: plainTextSummary(user, expiringContracts, lowItems),
+        html: body,
       });
       count++;
       setSentCount(count);
@@ -163,7 +199,7 @@ export default function AlertsEmail() {
           <Badge variant="outline">{budgetAlerts.length} alertas registrados</Badge>
         </div>
         {budgetError && <p className="text-sm text-red-600" role="alert">{budgetError.message}</p>}
-        <p className="text-xs text-amber-700">O e-mail externo requer implantação da função dispatch-budget-alerts, Resend e agendamento. Sem isso, avisos ficam pendentes na fila.</p>
+        <p className="text-xs text-amber-700">O e-mail externo exige a função dispatch-budget-alerts, um provedor configurado (Gmail API ou Resend) e o agendamento. Sem isso, avisos ficam pendentes na fila.</p>
         {!budgetAlerts.length
           ? <p className="text-sm text-muted-foreground">Nenhum marco orçamentário alcançado nesta organização.</p>
           : <div className="space-y-2 max-h-80 overflow-y-auto">{budgetAlerts.slice(0,30).map(a => {
