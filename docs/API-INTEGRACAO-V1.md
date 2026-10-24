@@ -1,7 +1,7 @@
 # API de Integração — Licits v1
 
 ## Status
-Endpoint **implementado no repositório, mas ainda não implantado nem homologado** no projeto Supabase.
+Endpoint **implementado no repositório**. O usuário confirmou uma implantação de `integration-contracts` (v3) no Supabase em 22/10/2026, mas a versão atualmente implantada e a homologação de fluxos reais **não foram reconfirmadas** após as novas alterações.
 
 ### Função
 `POST https://nefimqoszcidsnqvlnnh.supabase.co/functions/v1/integration-contracts`
@@ -74,7 +74,7 @@ npx supabase functions list
 
 ### Limitações e requisitos antes de clientes externos
 - A sincronização pode consultar deltas com `updated_since`; webhooks de saída e adaptadores específicos de ERP ainda não estão implementados;
-- as credenciais podem ser revogadas e expiram, mas ainda não há limites de taxa individuais por credencial;
+- o banco implementa quota de **60 requisições/minuto por credencial**; o bloqueio depende da migração implantada e deve ser confirmado em homologação;
 - validar isolamento de organizações, escopos, paginação, expiração, revogação e volume em homologação;
 - testes de integração reais no Supabase.
 
@@ -141,3 +141,11 @@ A partir da migração `20261022150000_atomic_contract_document_import.sql`, o L
 - Confirmar envios reais com Resend configurado e agendador de alertas autenticado.
 
 Não declare ambiente de produção homologado sem comprovação de cada passo.
+
+## Segurança e webhooks de saída — implementação parcial
+
+As rotinas puras `supabase/functions/_shared/webhook-policy.ts` implementam validação de destino HTTPS contra uma lista explícita de domínios permitidos e assinatura HMAC-SHA256 de corpo e timestamp. Elas são cobertas por testes Deno e não efetuam requisições automaticamente.
+
+**Ainda não existe um serviço de entrega de webhooks de saída em produção.** Antes de ativar webhooks para terceiros, é necessário implementar fila transacional (outbox), registro de destinos por organização, armazenamento protegido dos segredos, assinatura e verificação de replay, controle de concorrência, tentativas e expiração, validação DNS/IP na conexão para mitigar DNS rebinding, trilha de auditoria e testes com o destinatário real. Não apresente as rotinas de assinatura isoladas como integração com SAP/TOTVS ou webhooks concluídos.
+
+O gateway agora remove pontuação de CNPJ na criação via API e responde erros internos de forma genérica para não expor mensagens de banco/provedor. Verifique o deploy da Edge Function mais recente após a CI, com permissão e janela de homologação autorizadas.
