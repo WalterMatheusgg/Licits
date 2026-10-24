@@ -73,6 +73,14 @@ test('User removal keeps the Auth identity and historical data in other organiza
   assert.match(page,/Usuários bloqueados/);
 });
 
+test('Organization invitations use trusted configured frontend redirects',()=>{
+  const invite=read('supabase/functions/invite-member/index.ts');
+  assert.match(invite,/Deno\.env\.get\('PUBLIC_APP_URL'\)/);
+  assert.match(invite,/inviteUserByEmail\(email,redirectTo\?/);
+  assert.match(invite,/generateLink\(\{type:'magiclink',email,\.\.\.\(redirectTo/);
+  assert.doesNotMatch(invite,/req\.headers\.get\(['"](?:origin|host)['"]\)/i);
+});
+
 test('Accounting, isolation and delivery logic are tested in PostgreSQL CI',()=>{
   const workflow=read('.github/workflows/supabase-db-ci.yml');
   for(const file of ['tenant_isolation_integration.sql',
