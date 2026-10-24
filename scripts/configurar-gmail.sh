@@ -10,7 +10,13 @@ if [[ ! "$GMAIL_FROM_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]
   echo "E-mail remetente inválido." >&2
   exit 1
 fi
-read -r -p "Google OAuth Client ID: " GMAIL_CLIENT_ID
+read -r -s -p "Google OAuth Client ID (oculto para evitar exposicao acidental): " GMAIL_CLIENT_ID
+printf '\n'
+if [[ ! "$GMAIL_CLIENT_ID" =~ ^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$ ]]; then
+  echo "Client ID inválido: obtenha-o em Google Cloud > Google Auth Platform > Clientes. Ele deve terminar com .apps.googleusercontent.com." >&2
+  echo "Nenhuma alteração realizada no Supabase." >&2
+  exit 1
+fi
 read -r -s -p "Google OAuth Client Secret (oculto): " GMAIL_CLIENT_SECRET
 printf '\n'
 read -r -s -p "Google OAuth Refresh Token (oculto): " GMAIL_REFRESH_TOKEN
@@ -20,8 +26,37 @@ if [[ -z "$GMAIL_CLIENT_ID" || -z "$GMAIL_CLIENT_SECRET" || -z "$GMAIL_REFRESH_T
   exit 1
 fi
 
+for value in "$GMAIL_CLIENT_ID" "$GMAIL_CLIENT_SECRET" "$GMAIL_REFRESH_TOKEN"; do
+  if [[ "$value" == *
+{
+  printf 'EMAIL_PROVIDER=gmail\n'
+  printf 'GMAIL_FROM_EMAIL=%s\n' "$GMAIL_FROM_EMAIL"
+  printf 'GMAIL_CLIENT_ID=%s\n' "$GMAIL_CLIENT_ID"
+  printf 'GMAIL_CLIENT_SECRET=%s\n' "$GMAIL_CLIENT_SECRET"
+  printf 'GMAIL_REFRESH_TOKEN=%s\n' "$GMAIL_REFRESH_TOKEN"
+} > "$TEMP_FILE"
+npx --yes supabase secrets set --project-ref "$PROJECT_REF" --env-file "$TEMP_FILE"
+echo "Configuração Gmail gravada com segurança no Supabase."
+echo "Próximo passo: implantar send-email e dispatch-budget-alerts e testar mensagem real."
+\n'* || "$value" == *
+{
+  printf 'EMAIL_PROVIDER=gmail\n'
+  printf 'GMAIL_FROM_EMAIL=%s\n' "$GMAIL_FROM_EMAIL"
+  printf 'GMAIL_CLIENT_ID=%s\n' "$GMAIL_CLIENT_ID"
+  printf 'GMAIL_CLIENT_SECRET=%s\n' "$GMAIL_CLIENT_SECRET"
+  printf 'GMAIL_REFRESH_TOKEN=%s\n' "$GMAIL_REFRESH_TOKEN"
+} > "$TEMP_FILE"
+npx --yes supabase secrets set --project-ref "$PROJECT_REF" --env-file "$TEMP_FILE"
+echo "Configuração Gmail gravada com segurança no Supabase."
+echo "Próximo passo: implantar send-email e dispatch-budget-alerts e testar mensagem real."
+\r'* ]]; then
+    echo "Credenciais devem conter apenas uma linha. Nenhuma alteração realizada." >&2
+    exit 1
+  fi
+done
+
 TEMP_FILE="$(mktemp)"
-trap 'rm -f "$TEMP_FILE"; unset GMAIL_CLIENT_SECRET GMAIL_REFRESH_TOKEN' EXIT
+trap 'rm -f "$TEMP_FILE"; unset GMAIL_CLIENT_ID GMAIL_CLIENT_SECRET GMAIL_REFRESH_TOKEN' EXIT
 {
   printf 'EMAIL_PROVIDER=gmail\n'
   printf 'GMAIL_FROM_EMAIL=%s\n' "$GMAIL_FROM_EMAIL"
