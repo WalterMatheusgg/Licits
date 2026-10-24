@@ -1,52 +1,37 @@
 import {json,options,authorize,member,readJson,errorResponse,HttpError} from '../_shared/security.ts';
 
+// Remove access from ONE organization only. Keep auth.users and profiles so
+// immutable history, fiscal actions and memberships in other organizations survive.
 Deno.serve(async req => {
   const preflight=options(req);
   if(preflight)return preflight;
-
-  try{
+  try {
     const {admin,user}=await authorize(req);
     const body=await readJson(req);
     const organizationId=String(body.organization_id||'');
     const targetId=String(body.user_id||'');
-    if(!/^[0-9a-f-]{36}$/i.test(organizationId))throw new HttpError('Organização inválida.',400);
-    if(!/^[0-9a-f-]{36}$/i.test(targetId))throw new HttpError('Usuário inválido.',400);
-    if(targetId===user.id)throw new HttpError('An administrator cannot delete their own account.',400);
+    const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if(!uuid.test(organizationId))throw new HttpError('Organização inválida.',400);
+    if(!uuid.test(targetId))throw new HttpError('Usuário inválido.',400);
+    if(targetId===user.id)throw new HttpError('Você não pode remover o próprio acesso nesta tela.',400);
 
     await member(admin,user.id,organizationId,['organization_admin']);
-    const membership=await admin.from('organization_members')
-      .select('id').eq('organization_id',organizationId).eq('user_id',targetId).maybeSingle();
-    if(membership.error)throw membership.error;
-    if(!membership.data)throw new HttpError('Usuário não encontrado nesta organização.',404);
 
+    // Never delete the global auth account or profile. No work items are removed.
     const platformAdmin=await admin.from('platform_admins')
       .select('user_id').eq('user_id',targetId).maybeSingle();
     if(platformAdmin.error)throw platformAdmin.error;
-    if(platformAdmin.data)throw new HttpError('Administradores da plataforma não podem ser excluídos por esta tela.',409);
+    if(platformAdmin.data)throw new HttpError('Administradores da plataforma não podem ser removidos por esta tela.',409);
 
-    const adminMemberships=await admin.from('organization_members')
-      .select('organization_id')
-      .eq('user_id',targetId)
-      .eq('role','organization_admin')
-      .eq('status','active');
-    if(adminMemberships.error)throw adminMemberships.error;
-    for(const adminMembership of adminMemberships.data||[]){
-      const otherAdmins=await admin.from('organization_members')
-        .select('user_id',{count:'exact',head:true})
-        .eq('organization_id',adminMembership.organization_id)
-        .eq('role','organization_admin')
-        .eq('status','active')
-        .neq('user_id',targetId);
-      if(otherAdmins.error)throw otherAdmins.error;
-      if(otherAdmins.count===0){
-        throw new HttpError('O usuário é o último administrador ativo de uma organização e não pode ser excluído.',409);
-      }
-    }
-
-    const deletion=await admin.auth.admin.deleteUser(targetId);
+    // The database BEFORE DELETE trigger serializes last-admin checks to protect
+    // against two concurrent removals and direct Data API access.
+    const deletion=await admin.from('organization_members')
+      .delete().eq('organization_id',organizationId).eq('user_id',targetId)
+      .select('id').maybeSingle();
     if(deletion.error)throw deletion.error;
-    return json({success:true,deleted_user_id:targetId,history_preserved:true});
-  }catch(error){
+    if(!deletion.data)throw new HttpError('Acesso não encontrado nesta organização.',404);
+    return json({success:true,removed_membership_id:deletion.data.id,history_preserved:true,reinvite_allowed:true});
+  } catch(error) {
     return errorResponse(error);
   }
 });
