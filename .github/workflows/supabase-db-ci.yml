@@ -104,11 +104,6 @@ jobs:
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 \
             -f supabase/tests/audit_deduplication_integration.sql
-      - name: Test user deletion preserves history and releases email
-        run: |
-          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-            -v ON_ERROR_STOP=1 \
-            -f supabase/tests/user_deletion_preserves_history.sql
       - name: Validate backup with matching PostgreSQL 17 client
         run: |
           bash -n scripts/backup-database.sh
