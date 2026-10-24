@@ -101,8 +101,9 @@ export default function TopBar({ onMenuClick }) {
   };
 
   return (
-    <header className="h-16 border-b border-border bg-card/80 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+    <header className="sticky top-0 z-40 min-w-0 border-b border-border bg-card/95 backdrop-blur-sm">
+      <div className="flex min-h-16 min-w-0 items-center justify-between gap-2 px-3 lg:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <Button variant="ghost" size="icon" className="lg:hidden text-muted-foreground" onClick={onMenuClick} aria-label="Abrir menu">
           <Menu className="w-5 h-5" />
         </Button>
@@ -140,9 +141,9 @@ export default function TopBar({ onMenuClick }) {
         </form>
       </div>
 
-      <div className="flex items-center gap-1 lg:gap-2">
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 lg:gap-2">
         {pendingInvitations.length>0 && (
-          <Button variant="outline" size="sm" onClick={async()=>{try{await acceptInvitation(pendingInvitations[0].organization_id);}catch(e){window.alert('Convite: '+e.message);}}}>
+          <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={async()=>{try{await acceptInvitation(pendingInvitations[0].organization_id);}catch(e){window.alert('Convite: '+e.message);}}}>
             Aceitar convite ({pendingInvitations.length})
           </Button>
         )}
@@ -161,7 +162,7 @@ export default function TopBar({ onMenuClick }) {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-[calc(100vw-1.5rem)] max-w-80">
             <div className="px-3 py-2 font-semibold text-sm flex items-center justify-between">
               <span>Notificações</span>
               <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
@@ -203,6 +204,40 @@ export default function TopBar({ onMenuClick }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div className="flex min-w-0 items-center gap-2 px-3 pb-3 sm:hidden">
+        {memberships.length > 1 ? (
+          <Select value={activeOrganizationId || undefined} onValueChange={selectOrganization}>
+            <SelectTrigger aria-label="Organização ativa" className="w-[42%] min-w-0 shrink-0 bg-muted/40">
+              <Building2 className="mr-1 h-4 w-4 shrink-0" />
+              <SelectValue placeholder="Organização" />
+            </SelectTrigger>
+            <SelectContent>
+              {memberships.map((membership) => (
+                <SelectItem key={membership.organization_id} value={membership.organization_id}>
+                  {membership.organization.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="max-w-[35%] shrink-0 truncate text-xs text-muted-foreground" title={activeOrganization?.name}>
+            {activeOrganization?.name || 'Licits'}
+          </span>
+        )}
+        <form onSubmit={handleSearch} role="search" className="relative min-w-0 flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label="Buscar contratos" placeholder="Buscar contratos" value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)} className="min-w-0 bg-muted/50 pl-9" />
+        </form>
+      </div>
+      {pendingInvitations.length > 0 && (
+        <div className="px-3 pb-2 sm:hidden">
+          <Button variant="outline" size="sm" className="w-full" onClick={async () => {
+            try { await acceptInvitation(pendingInvitations[0].organization_id); }
+            catch (error) { window.alert('Convite: ' + error.message); }
+          }}>Aceitar convite ({pendingInvitations.length})</Button>
+        </div>
+      )}
     </header>
   );
 }

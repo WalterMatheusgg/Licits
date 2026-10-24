@@ -97,7 +97,7 @@ export default function Users() {
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Usuários</h1>
             <p className="text-sm text-muted-foreground">{users.length + blockedUsers.length} usuário(s) cadastrado(s)</p>
@@ -148,7 +148,7 @@ export default function Users() {
           {isLoadingBlocked ? (
             <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
           ) : blockedUsers.map((u) => (
-            <Card key={u.id} className="p-4 flex items-center justify-between gap-3">
+            <Card key={u.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">{u.full_name || 'Sem nome'}</p>
                 <p className="text-xs text-muted-foreground">{u.email}</p>

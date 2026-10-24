@@ -53,7 +53,7 @@ const navGroups = [
   }
 ];
 
-export default function Sidebar({ collapsed, onToggleCollapse }) {
+export default function Sidebar({ collapsed, onToggleCollapse, onNavigate }) {
   const location = useLocation();
   const { logout } = useAuth();
   const { can } = useOrganization();
@@ -66,7 +66,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
     <motion.aside
       animate={{ width: collapsed ? 72 : 268 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground z-[10000] flex flex-col border-r border-sidebar-border"
+      className="fixed left-0 top-0 h-[100dvh] max-w-[calc(100vw-2rem)] bg-sidebar text-sidebar-foreground z-[10000] flex flex-col border-r border-sidebar-border"
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-3 border-b border-sidebar-border flex-shrink-0">
@@ -95,7 +95,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-4 overflow-y-auto overflow-x-hidden" onClick={() => onToggleCollapse?.()}>
+      <nav aria-label="Navegação principal" className="flex-1 min-h-0 py-3 px-2 space-y-4 overflow-y-auto overflow-x-hidden">
         {navGroups.map((group) => (
           <div key={group.label}>
             <AnimatePresence>
@@ -112,7 +112,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
               {group.items.filter((item) => !item.permission || can(item.permission)).map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <Link key={item.path} to={item.path} aria-label={item.label}>
+                  <Link key={item.path} to={item.path} aria-label={item.label} aria-current={isActive ? "page" : undefined} onClick={onNavigate}>
                     <motion.div
                       whileHover={{ x: collapsed ? 0 : 3 }}
                       whileTap={{ scale: 0.97 }}

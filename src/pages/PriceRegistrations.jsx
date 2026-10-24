@@ -99,7 +99,7 @@ export default function PriceRegistrations() {
     const [f, setF] = useState(initial);
     return (
       <form onSubmit={e => { e.preventDefault(); onSave(f); }} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><Label>Nº do Pregão Eletrônico *</Label><Input value={f.auction_number} onChange={e => setF(p=>({...p,auction_number:e.target.value}))} required placeholder="Ex: 001/2024" /></div>
           <div><Label>Nº do Processo SEI</Label><Input value={f.sei_number} onChange={e => setF(p=>({...p,sei_number:e.target.value}))} placeholder="Ex: 08219.000001/2025-01" /></div>
         </div>
@@ -117,7 +117,7 @@ export default function PriceRegistrations() {
         </div>
 
         {f.registration_type === 'adesao' && (
-          <div className="grid grid-cols-2 gap-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <div><Label>Nome do Órgão *</Label><Input value={f.adhesion_organ} onChange={e => setF(p=>({...p,adhesion_organ:e.target.value}))} required placeholder="Ex: Ministério da Saúde" /></div>
             <div><Label>Nº do Pregão do Órgão *</Label><Input value={f.adhesion_auction_number} onChange={e => setF(p=>({...p,adhesion_auction_number:e.target.value}))} required placeholder="Ex: 012/2024" /></div>
           </div>
@@ -144,20 +144,20 @@ export default function PriceRegistrations() {
     const [f, setF] = useState(initial);
     return (
       <form onSubmit={e => { e.preventDefault(); onSave({ ...f, total_value: parseFloat(f.total_value)||0 }); }} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><Label>Nº da ARP *</Label><Input value={f.arp_number} onChange={e => setF(p=>({...p,arp_number:e.target.value}))} required placeholder="Ex: ARP-001/2025" /></div>
           <div><Label>Nº do Grupo</Label><Input value={f.group_number} onChange={e => setF(p=>({...p,group_number:e.target.value}))} placeholder="Ex: 01" /></div>
         </div>
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados da Empresa</h4>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><Label>Empresa *</Label><Input value={f.supplier_name} onChange={e => setF(p=>({...p,supplier_name:e.target.value}))} required /></div>
           <div><Label>CNPJ</Label><Input value={f.supplier_cnpj} onChange={e => setF(p=>({...p,supplier_cnpj:e.target.value}))} /></div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="col-span-2"><Label>Endereço</Label><Input value={f.supplier_address} onChange={e => setF(p=>({...p,supplier_address:e.target.value}))} /></div>
           <div><Label>CEP</Label><Input value={f.supplier_cep} onChange={e => setF(p=>({...p,supplier_cep:e.target.value}))} /></div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div><Label>Cidade</Label><Input value={f.supplier_city} onChange={e => setF(p=>({...p,supplier_city:e.target.value}))} /></div>
           <div><Label>Estado</Label>
             <Select value={f.supplier_state} onValueChange={v => setF(p=>({...p,supplier_state:v}))}>
@@ -167,12 +167,12 @@ export default function PriceRegistrations() {
           </div>
           <div><Label>Telefone</Label><Input value={f.supplier_phone} onChange={e => setF(p=>({...p,supplier_phone:e.target.value}))} /></div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><Label>E-mail</Label><Input type="email" value={f.supplier_email} onChange={e => setF(p=>({...p,supplier_email:e.target.value}))} /></div>
           <div><Label>Responsável</Label><Input value={f.supplier_contact} onChange={e => setF(p=>({...p,supplier_contact:e.target.value}))} /></div>
         </div>
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vigência</h4>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div><Label>Início</Label><Input type="date" value={f.start_date} onChange={e => setF(p=>({...p,start_date:e.target.value}))} /></div>
           <div><Label>Vigência</Label><Input type="date" value={f.end_date} onChange={e => setF(p=>({...p,end_date:e.target.value}))} /></div>
           <div><Label>Valor Total (R$)</Label><Input type="number" min="0" step="0.01" value={f.total_value} onChange={e => setF(p=>({...p,total_value:e.target.value}))} /></div>
@@ -234,7 +234,7 @@ export default function PriceRegistrations() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4 border-0 shadow-sm"><p className="text-xs text-muted-foreground">Empresa</p><p className="font-semibold text-sm">{selectedGroup.supplier_name}</p><p className="text-[10px] text-muted-foreground">{selectedGroup.supplier_cnpj}</p></Card>
           <Card className="p-4 border-0 shadow-sm"><p className="text-xs text-muted-foreground">Valor Total</p><p className="font-semibold text-sm text-emerald-600">{fmtBRL(selectedGroup.total_value)}</p></Card>
           <Card className="p-4 border-0 shadow-sm"><p className="text-xs text-muted-foreground">Vigência</p><p className={`font-semibold text-sm ${daysLeft !== null && daysLeft < 30 ? 'text-red-600' : ''}`}>{daysLeft !== null ? `${daysLeft} dias` : '—'}</p><p className="text-[10px] text-muted-foreground">{selectedGroup.end_date ? format(new Date(selectedGroup.end_date), 'dd/MM/yyyy') : '—'}</p></Card>
@@ -242,7 +242,7 @@ export default function PriceRegistrations() {
         </div>
 
         <Tabs defaultValue="items">
-          <TabsList className="flex-wrap h-auto gap-1">
+          <TabsList className="h-auto gap-1">
             <TabsTrigger value="items">Itens</TabsTrigger>
             <TabsTrigger value="fiscal">Fiscalização</TabsTrigger>
             <TabsTrigger value="occurrences">Ocorrências</TabsTrigger>

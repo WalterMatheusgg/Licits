@@ -60,7 +60,7 @@ export default function Audit() {
           <Input placeholder="Buscar por usuário ou detalhe..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
         </div>
         <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Ação" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Ação" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas Ações</SelectItem>
             {Object.entries(actionLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}

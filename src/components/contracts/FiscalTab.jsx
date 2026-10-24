@@ -228,7 +228,7 @@ ${r.comments ? `<div style="margin-bottom:16px"><strong>Comentários:</strong><d
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Registrar Rotina de Fiscalização</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Tipo de Fiscalização *</Label>
                   <Select value={form.record_type} onValueChange={v => update('record_type', v)} required>

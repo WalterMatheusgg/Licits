@@ -3,7 +3,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div role="region" aria-label="Tabela com rolagem horizontal" tabIndex={0} className="relative w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain">
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}

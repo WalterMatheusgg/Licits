@@ -133,3 +133,22 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Layout responsivo do aplicativo: preserve a largura do viewport sem cortar abas. */
+@layer base {
+  html, body, #root {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  html { overflow-x: clip; }
+  body { overflow-wrap: break-word; }
+  input, select, textarea { min-width: 0; }
+}
+@media (max-width: 639px) {
+  .app-main > * { min-width: 0; max-width: 100%; }
+  .app-main [role="tablist"] { scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .app-main [role="tabpanel"] { min-width: 0; max-width: 100%; }
+  .app-main [data-slot="scroll-area"] { max-width: 100%; }
+}

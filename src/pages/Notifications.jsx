@@ -66,7 +66,7 @@ export default function Notifications() {
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Notificações</h1>
             <p className="text-sm text-muted-foreground">{unreadCount} não lida(s)</p>
@@ -80,7 +80,7 @@ export default function Notifications() {
       </motion.div>
 
       <Select value={typeFilter} onValueChange={setTypeFilter}>
-        <SelectTrigger className="w-48"><SelectValue placeholder="Tipo" /></SelectTrigger>
+        <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Tipo" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todas</SelectItem>
           <SelectItem value="vencimento">Vencimento</SelectItem>

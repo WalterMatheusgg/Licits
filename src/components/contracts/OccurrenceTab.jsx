@@ -173,7 +173,7 @@ export default function OccurrenceTab({ contractId, contract }) {
               )}
 
               <form onSubmit={e => { e.preventDefault(); addMutation.mutate(form); }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Data da Ocorrência</Label>
                     <Input type="date" value={form.occurrence_date} onChange={e => update('occurrence_date', e.target.value)} />
