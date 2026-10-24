@@ -1,7 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { permittedAlertUserIds, eligibleAlertRecipients, alertIdempotencyKey } from '../_shared/alert-delivery.ts';
+import {mailDeliveryReady, sendConfiguredEmail} from '../_shared/email-provider.ts';
 
-async function deliverAlert(db: any, alert: any, contract: any, subject: string, text: string, resendKey: string, sender: string) {
+async function deliverAlert(db: any, alert: any, contract: any, subject: string, text: string) {
   const roles = await db.from('organization_members')
     .select('user_id,role,status').eq('organization_id',alert.organization_id).eq('status','active');
   if (roles.error) throw roles.error;
@@ -12,16 +13,12 @@ async function deliverAlert(db: any, alert: any, contract: any, subject: string,
   const recipients = eligibleAlertRecipients(people.data || [], ids);
   if (!recipients.length) throw Error('No validated recipient e-mail');
   for (const person of recipients) {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + resendKey,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': alertIdempotencyKey(alert.id, person.id),
-      },
-      body: JSON.stringify({from: sender, to: [person.email], subject, text}),
+    await sendConfiguredEmail({
+      to: person.email,
+      subject,
+      text,
+      idempotencyKey: alertIdempotencyKey(alert.id, person.id),
     });
-    if (!response.ok) throw Error('Email service HTTP ' + response.status);
   }
 }
 
@@ -34,10 +31,8 @@ Deno.serve(async (req) => {
     return new Response('Unauthorized', {status: 401});
   const base = Deno.env.get('SUPABASE_URL');
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const resendKey = Deno.env.get('RESEND_API_KEY');
-  const sender = Deno.env.get('RESEND_FROM_EMAIL');
-  if (!base || !key || !resendKey || !sender)
-    return Response.json({error:'Missing server-side secrets'}, {status:503});
+  if (!base || !key || !mailDeliveryReady())
+    return Response.json({error:'Missing server-side mail settings'}, {status:503});
 
   const db = createClient(base,key,{auth:{autoRefreshToken:false,persistSession:false}});
   const claimed = await db.rpc('claim_contract_budget_alerts',{p_limit:20});
@@ -68,7 +63,7 @@ Deno.serve(async (req) => {
         'Aviso automático; não substitui o controle e a decisão administrativa do fiscal.',
         url
       ].join('\n');
-      await deliverAlert(db,alert,contract,subject,message,resendKey,sender);
+      await deliverAlert(db,alert,contract,subject,message);
       const done=await db.from('contract_budget_alerts').update({
         status:'sent',sent_at:new Date().toISOString(),last_error:null
       }).eq('id',alert.id).eq('status','processing').select('id').maybeSingle();
@@ -119,7 +114,7 @@ Deno.serve(async (req) => {
         'Aviso automático; não substitui o controle e a decisão administrativa do fiscal.',
         url,
       ].join('\n');
-      await deliverAlert(db,alert,contract,subject,message,resendKey,sender);
+      await deliverAlert(db,alert,contract,subject,message);
       const done = await db.from('contract_expiry_alerts').update({
         status:'sent',sent_at:new Date().toISOString(),last_error:null,
       }).eq('id',alert.id).eq('status','processing').select('id').maybeSingle();
