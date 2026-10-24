@@ -11,12 +11,12 @@ values('a2000000-0000-4000-8000-000000000002','a2000000-0000-4000-8000-000000000
   'organization_admin','active',now());
 
 insert into public.suppliers(
-  id,organization_id,legal_name,cnpj,email,phone,address,notes,created_by
+  id,organization_id,legal_name,cnpj,email,phone,address,created_by
 ) values (
   'a2000000-0000-4000-8000-000000000003',
   'a2000000-0000-4000-8000-000000000002',
   'Fornecedor Fictício de Auditoria','12345678000195','audit@example.invalid',
-  '+55 11 5555-0101','Rua de Teste, 10','nota privada de teste',
+  '+55 11 5555-0101','Rua de Teste, 10',
   'a2000000-0000-4000-8000-000000000001'
 );
 update public.suppliers set phone='+55 11 5555-0102'
