@@ -45,6 +45,10 @@ jobs:
           test "$RLS_COUNT" -ge 19
           test "$ARP_COUNT" -eq 1
           test "$READ_COUNT" -eq 1
+      - name: Check safe audit triggers without writing data
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 -f scripts/verify-audit-readonly.sql
       - name: Verify atomic administrative resolution RPC
         run: |
           DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
