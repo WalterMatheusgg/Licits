@@ -204,6 +204,7 @@ export default function TopBar({ onMenuClick }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      </div>
       <div className="flex min-w-0 items-center gap-2 px-3 pb-3 sm:hidden">
         {memberships.length > 1 ? (
           <Select value={activeOrganizationId || undefined} onValueChange={selectOrganization}>
