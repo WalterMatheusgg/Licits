@@ -23,6 +23,23 @@ Deno.serve(async req => {
     if(platformAdmin.error)throw platformAdmin.error;
     if(platformAdmin.data)throw new HttpError('Administradores da plataforma não podem ser removidos por esta tela.',409);
 
+    // Give a clear error before attempting deletion. The database trigger
+    // remains the final safeguard, including simultaneous or direct deletions.
+    const target=await admin.from('organization_members')
+      .select('role,status').eq('organization_id',organizationId)
+      .eq('user_id',targetId).maybeSingle();
+    if(target.error)throw target.error;
+    if(!target.data)throw new HttpError('Acesso não encontrado nesta organização.',404);
+    if(target.data.role==='organization_admin' && target.data.status==='active'){
+      const others=await admin.from('organization_members')
+        .select('user_id',{count:'exact',head:true})
+        .eq('organization_id',organizationId)
+        .eq('role','organization_admin').eq('status','active')
+        .neq('user_id',targetId);
+      if(others.error)throw others.error;
+      if(!others.count)throw new HttpError('A organização precisa de pelo menos um administrador ativo.',409);
+    }
+
     // The database BEFORE DELETE trigger serializes last-admin checks to protect
     // against two concurrent removals and direct Data API access.
     const deletion=await admin.from('organization_members')
