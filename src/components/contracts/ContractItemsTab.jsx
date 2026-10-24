@@ -198,7 +198,7 @@ export default function ContractItemsTab({ contractId, contract }) {
       <Tabs defaultValue="inventory">
         <TabsList>
           <TabsTrigger value="inventory">Saldo contratado</TabsTrigger>
-          <TabsTrigger value="history">Registros de Baixa ({allWithdrawals.length})</TabsTrigger>
+          <TabsTrigger value="history">Compras e baixas ({allWithdrawals.length})</TabsTrigger>
         </TabsList>
 
         {/* ESTOQUE TAB */}
@@ -269,11 +269,11 @@ export default function ContractItemsTab({ contractId, contract }) {
                         <Dialog open={showConsume?.id === item.id} onOpenChange={(open) => { if(!open){setShowConsume(null);setConsumeForm({os_number:'',withdrawal_date:new Date().toISOString().split('T')[0],quantity:'',notes:''})} }}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" onClick={() => setShowConsume(item)} disabled={isCritical} className="gap-1.5 text-xs h-7">
-                              <Minus className="w-3 h-3" /> Registrar compra
+                              <Minus className="w-3 h-3" /> Registrar utilização
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-sm">
-                            <DialogHeader><DialogTitle>Registrar aquisição / utilização contratual</DialogTitle></DialogHeader>
+                            <DialogHeader><DialogTitle>Registrar compra ou utilização do item</DialogTitle></DialogHeader>
                             <div className="space-y-3">
                               <div className="p-3 bg-muted rounded-lg">
                                 <p className="text-sm font-medium">{item.description}</p>
@@ -315,13 +315,13 @@ export default function ContractItemsTab({ contractId, contract }) {
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="max-w-sm">
-                                <DialogHeader><DialogTitle>Ajustar Qtd Contratada</DialogTitle></DialogHeader>
+                                <DialogHeader><DialogTitle>Alterar quantidade contratada</DialogTitle></DialogHeader>
                                 <div className="space-y-4">
                                   <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                                     <p className="text-sm font-medium">{item.description}</p>
                                     <p className="text-xs text-muted-foreground mt-1">Atual: <strong>{(item.contracted_qty||0).toLocaleString('pt-BR')} {item.unit}</strong></p>
                                   </div>
-                                  <div><Label>Nova Quantidade Total</Label><Input type="number" min="0" step="0.01" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} autoFocus /></div>
+                                  <div><Label>Nova quantidade contratada</Label><Input type="number" min="0" step="0.01" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} autoFocus /></div>
                                   <Button onClick={() => adjustMutation.mutate({ id: item.id, qty: adjustQty })} disabled={!adjustQty||adjustMutation.isPending} className="w-full">Confirmar</Button>
                                 </div>
                               </DialogContent>
@@ -354,8 +354,8 @@ export default function ContractItemsTab({ contractId, contract }) {
                               </DialogContent>
                             </Dialog>
 
-                            <Button variant="ghost" size="sm" className="text-xs gap-1 h-7 text-red-500 hover:bg-red-50" onClick={() => { if(confirm('Excluir este item?')) deleteMutation.mutate(item.id); }}>
-                              <Trash2 className="w-3 h-3" /> Excluir
+                            <Button variant="ghost" size="sm" className="text-xs gap-1 h-7 text-red-500 hover:bg-red-50" onClick={() => { if(confirm('Arquivar este item? Ele deixa a lista ativa, mas permanece no histórico do contrato.')) deleteMutation.mutate(item.id); }}>
+                              <Trash2 className="w-3 h-3" /> Arquivar
                             </Button>
                           </>
                         )}
