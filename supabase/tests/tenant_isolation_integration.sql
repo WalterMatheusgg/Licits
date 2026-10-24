@@ -214,4 +214,103 @@ do $verify$ begin
  where id='e2222222-2222-4222-8222-222222222222';
  if found then raise exception 'Cross-tenant group update permitted'; end if;
 end $verify$;
+-- Functional validation: rejected inputs must not mutate valid business rows.
+-- Existing fixtures use tenant A and authenticated user B at this point.
+-- Switch back to user A to verify same-tenant integrity and failures.
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+do $functional_negative$
+declare rejected boolean; rows_affected integer;
+begin
+ -- Contract dates: invalid end date is blocked.
+ rejected := false;
+ begin
+   update public.contracts set start_date='2026-10-20', end_date='2026-10-19'
+   where id='d1111111-1111-4111-8111-111111111111';
+ exception when check_violation then rejected:=true;
+ end;
+ if not rejected then raise exception 'Contract accepted end_date before start_date'; end if;
+
+ -- Contract values: budget must never be negative.
+ rejected := false;
+ begin
+   update public.contracts set total_value=-1
+   where id='d1111111-1111-4111-8111-111111111111';
+ exception when check_violation then rejected:=true;
+ end;
+ if not rejected then raise exception 'Contract accepted negative budget'; end if;
+
+ -- Item quantities: no negative contracted quantities.
+ rejected := false;
+ begin
+   update public.contract_items set contracted_qty=-1
+   where id='f1111111-1111-4111-8111-111111111111';
+ exception when check_violation then rejected:=true;
+ end;
+ if not rejected then raise exception 'Contract item accepted negative quantity'; end if;
+
+ -- Direct consumption editing cannot bypass the atomic withdrawal procedure.
+ rejected := false;
+ begin
+   update public.contract_items set used_qty=used_qty+1
+   where id='f1111111-1111-4111-8111-111111111111';
+ exception when others then rejected:=true;
+ end;
+ if not rejected then raise exception 'Direct stock consumption mutation permitted'; end if;
+
+ -- Contract cannot link an external organization's supplier.
+ rejected := false;
+ begin
+   update public.contracts
+   set supplier_id='c2222222-2222-4222-8222-222222222222'
+   where id='d1111111-1111-4111-8111-111111111111';
+ exception when foreign_key_violation then rejected:=true;
+ end;
+ if not rejected then raise exception 'Contract accepted cross-organization supplier'; end if;
+
+ -- A document must reference a contract in the same organization.
+ rejected := false;
+ begin
+   insert into public.documents(organization_id,contract_id,title,document_type,storage_bucket,storage_path)
+   values('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          'd1111111-1111-4111-8111-111111111111',
+          'Invalid reference','contrato','generated-documents','blocked/test.pdf');
+ exception when foreign_key_violation or insufficient_privilege then rejected:=true;
+ end;
+ if not rejected then raise exception 'Cross-tenant document attachment accepted'; end if;
+
+ -- An inventory item cannot belong to both a contract and an ARP group.
+ rejected := false;
+ begin
+   insert into public.contract_items(organization_id,contract_id,price_registration_group_id,description,contracted_qty)
+   values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          'd1111111-1111-4111-8111-111111111111',
+          'e2222222-2222-4222-8222-222222222222',
+          'Invalid dual parent',1);
+ exception when check_violation then rejected:=true;
+ end;
+ if not rejected then raise exception 'Contract/ARP item accepted two parent records'; end if;
+
+ -- Zero-unit withdrawal is never acceptable.
+ rejected := false;
+ begin
+   perform public.register_item_withdrawal(
+     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+     'f1111111-1111-4111-8111-111111111111',
+     0,'OS-ZERO','2026-10-20','Invalid input');
+ exception when others then rejected:=true;
+ end;
+ if not rejected then raise exception 'Zero-quantity withdrawal accepted'; end if;
+
+ -- Existing valid fixtures remain unchanged after all rejected inputs.
+ if (select used_qty from public.contract_items
+     where id='f1111111-1111-4111-8111-111111111111') <> 3 then
+   raise exception 'Rejected input changed consumption';
+ end if;
+ if (select supplier_id from public.contracts
+     where id='d1111111-1111-4111-8111-111111111111')
+     is distinct from 'c1111111-1111-4111-8111-111111111111'::uuid then
+   raise exception 'Rejected input changed contract supplier';
+ end if;
+end $functional_negative$;
+
 rollback;
