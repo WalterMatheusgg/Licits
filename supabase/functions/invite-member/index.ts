@@ -1,11 +1,11 @@
-import {json,options,authorize,member} from '../_shared/security.ts';
+import {json,options,authorize,member,readJson,errorResponse,HttpError} from '../_shared/security.ts';
 Deno.serve(async req => {
   const preflight=options(req);if(preflight)return preflight;
   try{
-    const {admin,user}=await authorize(req), body=await req.json();
+    const {admin,user}=await authorize(req), body=await readJson(req);
     const org=String(body.organization_id||''),email=String(body.email||'').trim().toLowerCase(),role=String(body.role||'');
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw Error('E-mail inválido.');
-    if(!['organization_admin','gestor','fiscal','operacional','visualizador'].includes(role))throw Error('Papel inválido.');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw new HttpError('E-mail inválido.',400);
+    if(!['organization_admin','gestor','fiscal','operacional','visualizador'].includes(role))throw new HttpError('Papel inválido.',400);
     await member(admin,user.id,org,['organization_admin']);
     const capacity=await admin.rpc('reserve_integration_capacity',{p_organization_id:org,p_user_id:user.id,p_operation:'invite-member'});
     if(capacity.error)throw capacity.error;
@@ -20,12 +20,12 @@ Deno.serve(async req => {
     const existingMembership=await admin.from('organization_members')
       .select('id,status').eq('organization_id',org).eq('user_id',id).maybeSingle();
     if(existingMembership.error)throw existingMembership.error;
-    if(existingMembership.data?.status==='active')throw Error('Usuário já pertence à organização.');
+    if(existingMembership.data?.status==='active')throw new HttpError('Usuário já pertence à organização.',409);
     const result=await admin.from('organization_members').upsert({
       organization_id:org,user_id:id,role,status:'invited',
       accepted_at:null,created_by:user.id,updated_by:user.id
     },{onConflict:'organization_id,user_id'}).select('id').single();
     if(result.error)throw result.error;
     return json({success:true,membership_id:result.data.id,pending_acceptance:true,email_sent:emailSent});
-  }catch(e){return json({error:String(e instanceof Error?e.message:e)},400);}
+  }catch(e){return errorResponse(e);}
 });

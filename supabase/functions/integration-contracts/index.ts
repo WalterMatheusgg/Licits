@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { json, options, authorize, member, env } from '../_shared/security.ts';
+import { json, options, authorize, member, env, readJson, errorResponse } from '../_shared/security.ts';
 import { normalizeErpContract } from '../_shared/erp-adapter.ts';
 const contractStatuses = ['ativo', 'vencido', 'encerrado', 'suspenso', 'cancelado', 'em_analise', 'em_analise_slic'];
 const contractFields = new Set([
@@ -50,8 +50,7 @@ Deno.serve(async req => {
       admin = authorized.admin;
       user = authorized.user;
     }
-    const body = await req.json();
-    if (!body || typeof body !== 'object' || Array.isArray(body)) return json({error:'Corpo JSON inválido'},400);
+    const body = await readJson(req);
     const organization_id = String(body.organization_id || '');
     if (!/^[a-f0-9-]{36}$/i.test(organization_id)) return json({ error: 'Organização inválida' }, 400);
     const operation = String(body.operation || 'list');
@@ -250,8 +249,6 @@ Deno.serve(async req => {
         total_pages: Math.ceil((result.count ?? 0) / per_page) },
     });
   } catch (error) {
-    const message = String(error instanceof Error ? error.message : error);
-    // No raw internal credential or provider response is returned.
-    return json({error: /Sessão|Faça login/.test(message) ? 'Não autenticado' : message}, 400);
+    return errorResponse(error);
   }
 });
