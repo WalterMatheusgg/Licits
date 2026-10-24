@@ -73,12 +73,37 @@ test('User removal keeps the Auth identity and historical data in other organiza
   assert.match(page,/Usuários bloqueados/);
 });
 
-test('Organization invitations use trusted configured frontend redirects',()=>{
+test('Invitations send verified one-time links to the public application without relying on Auth Site URL',()=>{
   const invite=read('supabase/functions/invite-member/index.ts');
+  assert.match(invite,/DEFAULT_APP_URL='https:\/\/licits\.vercel\.app'/);
   assert.match(invite,/Deno\.env\.get\('PUBLIC_APP_URL'\)/);
-  assert.match(invite,/inviteUserByEmail\(email,redirectTo\?/);
-  assert.match(invite,/generateLink\(\{type:'magiclink',email,\.\.\.\(redirectTo/);
+  assert.match(invite,/generateLink\(\{type,email\}\)/);
+  assert.match(invite,/type=existingId \? 'magiclink' : 'invite'/);
+  assert.match(invite,/properties\.hashed_token/);
+  assert.match(invite,/confirm\.searchParams\.set\('token_hash'/);
+  assert.match(invite,/sendConfiguredEmail/);
+  assert.doesNotMatch(invite,/inviteUserByEmail\(/);
   assert.doesNotMatch(invite,/req\.headers\.get\(['"](?:origin|host)['"]\)/i);
+});
+
+test('One-time invite verification requires a person to confirm and can set a password',()=>{
+  const confirm=read('src/pages/auth/ConfirmAccess.jsx');
+  const app=read('src/App.jsx');
+  const password=read('src/pages/auth/UpdatePassword.jsx');
+  assert.match(app,/path="\/auth\/confirm"/);
+  assert.match(confirm,/supabase\.auth\.verifyOtp/);
+  assert.match(confirm,/window\.history\.replaceState/);
+  assert.match(confirm,/onClick=\{confirm\}/);
+  assert.match(confirm,/update-password\?source=invite/);
+  assert.match(password,/authUser/);
+  assert.match(password,/Sua sessão não está ativa/);
+});
+
+test('Existing organization members can also accept new pending invitations',()=>{
+  const gate=read('src/components/auth/OrganizationGate.jsx');
+  assert.match(gate,/pendingInvitations\.length > 0/);
+  assert.match(gate,/return \(\s*<>\s*\{pendingPanel\}\s*<Outlet/);
+  assert.match(gate,/acceptInvitation\(item\.organization_id\)/);
 });
 
 test('Accounting, isolation and delivery logic are tested in PostgreSQL CI',()=>{
