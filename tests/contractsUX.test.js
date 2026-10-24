@@ -39,7 +39,7 @@ test('timeline supports pagination and does not display raw audit record content
 });
 test('contract status and audit queries are both tenant scoped', () => {
   const api = read('src/api/dataClient.js');
-  const migration = read('supabase/migrations/20261024203000_contract_history_and_archive_queries.sql');
+  const migration = read('supabase/migrations/20261024190225_contract_history_and_archive_queries.sql');
   assert.match(api, /p_organization_id: ctx\.org/);
   assert.match(migration, /public\.can_manage_contracts\(p_organization_id\)/);
   assert.match(migration, /public\.is_organization_member\(p_organization_id\)/);
