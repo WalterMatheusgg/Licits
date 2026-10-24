@@ -90,3 +90,11 @@ test('Remote smoke checks high-risk tenant tables without writing to Supabase',(
   assert.doesNotMatch(script,/method:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/);
   assert.match(read('.github/workflows/remote-smoke.yml'),/workflow_dispatch/);
 });
+
+test('Integration gateway does not leak internal errors or preserve CNPJ formatting',()=>{
+  const gateway=read('supabase/functions/integration-contracts/index.ts');
+  assert.ok(gateway.includes("replace(/\\D/g,'')"), 'Masked CNPJ must strip non-digits');
+  assert.ok(!gateway.includes("replace(/\\\\D/g,'')"), 'Escaped literal D regex would reject formatted CNPJ');
+  assert.match(gateway,/Falha interna na integração/);
+  assert.ok(existsSync(join(root,'supabase/functions/_shared/webhook-policy.test.ts')));
+});
