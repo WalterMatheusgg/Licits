@@ -29,6 +29,7 @@ jobs:
       - name: Validate Edge Functions
         run: |
           deno check supabase/functions/invite-member/index.ts
+          deno check supabase/functions/delete-user/index.ts
           deno check supabase/functions/send-email/index.ts
           deno check supabase/functions/analyze-contract/index.ts
           deno check supabase/functions/extract-document/index.ts

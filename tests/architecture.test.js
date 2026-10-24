@@ -45,26 +45,40 @@ test('Mandatory tenant-scoped database operations remain implemented',()=>{
 
 test('Deleted users are removed from the organization user list',()=>{
   const client=read('src/api/dataClient.js');
-  assert.match(client,/if \(name === 'User'\) return updateMember\(id, \{ status: 'inativo' \}, ctx\)/);
+  assert.match(client,/if \(name === 'User'\) return invokeFunction\('delete-user'/);
   assert.match(client,/query\.neq\('status', 'revoked'\)/);
+  assert.match(client,/query\.neq\('status', 'suspended'\)/);
 });
 
-test('Revoked users can be reactivated separately from a resent invitation',()=>{
+test('Blocked users are listed separately and can be unblocked',()=>{
   const client=read('src/api/dataClient.js');
   const page=read('src/pages/Users.jsx');
-  const invite=read('supabase/functions/invite-member/index.ts');
-  assert.match(client,/listRevoked: \(\) => listUsers\('revoked'\)/);
-  assert.match(page,/Reativar acesso/);
-  assert.match(page,/Novo convite/);
-  assert.match(invite,/generateLink\(\{type:'magiclink',email\}\)/);
-  assert.match(invite,/sendConfiguredEmail\(\{/);
+  assert.match(client,/listBlocked: \(\) => listUsers\('suspended'\)/);
+  assert.match(page,/Usuários bloqueados/);
+  assert.match(page,/Desbloquear/);
+  assert.doesNotMatch(page,/Acesso revogado/);
+});
+
+test('User deletion preserves authored records and removes only the auth profile',()=>{
+  const deletion=read('supabase/functions/delete-user/index.ts');
+  const migration=read('supabase/migrations/20261024050000_preserve_history_on_user_deletion.sql');
+  assert.match(deletion,/admin\.auth\.admin\.deleteUser\(targetId\)/);
+  assert.match(deletion,/An administrator cannot delete their own account/);
+  assert.match(migration,/occurrences/);
+  assert.match(migration,/admin_requests/);
+  assert.match(migration,/item_withdrawals/);
+  assert.match(migration,/ai_analysis_jobs/);
+  assert.match(migration,/integration_credentials/);
+  assert.match(migration,/on delete set null/i);
+  assert.match(migration,/integration_usage_user_id_fkey/);
 });
 
 test('Accounting, isolation and delivery logic are tested in PostgreSQL CI',()=>{
   const workflow=read('.github/workflows/supabase-db-ci.yml');
   for(const file of ['tenant_isolation_integration.sql',
     'budget_alerts_integration.sql','invitations_quotas_integration.sql',
-    'integration_contract_create.sql','atomic_document_import_integration.sql']){
+    'integration_contract_create.sql','atomic_document_import_integration.sql',
+    'user_deletion_preserves_history.sql']){
     assert.ok(existsSync(join(root,'supabase/tests',file)));
     assert.ok(workflow.includes(file),'CI omitted '+file);
   }

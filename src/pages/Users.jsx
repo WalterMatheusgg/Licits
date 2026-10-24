@@ -37,9 +37,9 @@ export default function Users() {
     initialData: [],
   });
   const isAdmin = currentUser?.role === 'admin';
-  const { data: revokedUsers = [], isLoading: isLoadingRevoked } = useQuery({
-    queryKey: ['revoked-users'],
-    queryFn: () => dataClient.users.listRevoked(),
+  const { data: blockedUsers = [], isLoading: isLoadingBlocked } = useQuery({
+    queryKey: ['blocked-users'],
+    queryFn: () => dataClient.users.listBlocked(),
     enabled: isAdmin,
     initialData: [],
   });
@@ -60,7 +60,7 @@ export default function Users() {
       setShowInvite(false);
       setInviteEmail('');
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
     } catch (error) {
       alert('Não foi possível enviar o convite: ' + error.message);
     } finally {
@@ -72,7 +72,7 @@ export default function Users() {
     mutationFn: ({ id, data }) => dataClient.entities.User.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
     },
   });
 
@@ -80,7 +80,7 @@ export default function Users() {
     mutationFn: (id) => dataClient.entities.User.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
     },
   });
 
@@ -88,7 +88,7 @@ export default function Users() {
     mutationFn: (id) => dataClient.entities.User.update(id, { status: 'ativo' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['revoked-users'] });
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
     },
     onError: (error) => window.alert('Não foi possível reativar o acesso: ' + error.message),
   });
@@ -99,7 +99,7 @@ export default function Users() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Usuários</h1>
-            <p className="text-sm text-muted-foreground">{users.length} usuário(s) cadastrado(s)</p>
+            <p className="text-sm text-muted-foreground">{users.length + blockedUsers.length} usuário(s) cadastrado(s)</p>
           </div>
           {isAdmin && (
             <Dialog open={showInvite} onOpenChange={setShowInvite}>
@@ -136,17 +136,17 @@ export default function Users() {
         <Input placeholder="Buscar usuários..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
       </div>
 
-      {isAdmin && (isLoadingRevoked || revokedUsers.length > 0) && (
+      {isAdmin && (isLoadingBlocked || blockedUsers.length > 0) && (
         <section className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold">Acesso revogado</h2>
+            <h2 className="text-lg font-semibold">Usuários bloqueados</h2>
             <p className="text-sm text-muted-foreground">
-              Usuários removidos da lista principal. Reativar restaura o acesso imediatamente; reenviar convite exige que a pessoa aceite novamente.
+              Usuários bloqueados podem ser desbloqueados para voltar a acessar a organização.
             </p>
           </div>
-          {isLoadingRevoked ? (
+          {isLoadingBlocked ? (
             <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
-          ) : revokedUsers.map((u) => (
+          ) : blockedUsers.map((u) => (
             <Card key={u.id} className="p-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">{u.full_name || 'Sem nome'}</p>
@@ -156,12 +156,12 @@ export default function Users() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" disabled={reactivateMutation.isPending}>
-                      Reativar acesso
+                      Desbloquear
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Reativar acesso?</AlertDialogTitle>
+                      <AlertDialogTitle>Desbloquear usuário?</AlertDialogTitle>
                       <AlertDialogDescription>
                         {u.full_name || u.email} voltará a ter acesso imediatamente à organização.
                       </AlertDialogDescription>
@@ -169,22 +169,11 @@ export default function Users() {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction onClick={() => reactivateMutation.mutate(u.id)}>
-                        Reativar
+                        Desbloquear
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setInviteEmail(u.email || '');
-                    setInviteRole(u.role || 'operacional');
-                    setShowInvite(true);
-                  }}
-                >
-                  <Mail className="w-3 h-3 mr-1" /> Novo convite
-                </Button>
               </div>
             </Card>
           ))}
@@ -282,7 +271,9 @@ export default function Users() {
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta ação não pode ser desfeita. O usuário <strong>{u.full_name || u.email}</strong> será removido permanentemente.</AlertDialogDescription>
+                            <AlertDialogDescription>
+                              O perfil e a conta de <strong>{u.full_name || u.email}</strong> serão excluídos de todas as organizações. Contratos, ocorrências, solicitações e auditoria criados por essa pessoa serão mantidos. O e-mail poderá ser cadastrado e convidado novamente depois.
+                            </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>

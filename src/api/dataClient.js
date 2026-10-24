@@ -281,7 +281,10 @@ async function update(name, id, data) {
 }
 async function remove(name, id) {
   const ctx = await context();
-  if (name === 'User') return updateMember(id, { status: 'inativo' }, ctx);
+  if (name === 'User') return invokeFunction('delete-user', {
+    organization_id: ctx.org,
+    user_id: id,
+  });
   if (!definitions[name]?.soft) return fail('Esta entidade não permite arquivamento: ' + name);
   const ok = unwrap(await supabase.rpc('archive_business_record', {
     p_entity: definitions[name].table,
@@ -295,9 +298,11 @@ async function listUsers(status = null) {
   const ctx = await context();
   let query = supabase.from('organization_members')
     .select('user_id,role,status').eq('organization_id', ctx.org);
-  query = status
-    ? query.eq('status', status)
-    : query.neq('status', 'revoked');
+  if (status) {
+    query = query.eq('status', status);
+  } else {
+    query = query.neq('status', 'revoked').neq('status', 'suspended');
+  }
   const members = unwrap(await query);
   if (!members.length) return [];
   const profiles = unwrap(await supabase.from('profiles').select('id,full_name,email,status').in('id', members.map(m => m.user_id)));
@@ -415,7 +420,7 @@ export const dataClient = {
       const ctx = await context();
       return invokeFunction('invite-member', { email, role: roleForDB(role), organization_id: ctx.org });
     },
-    listRevoked: () => listUsers('revoked'),
+    listBlocked: () => listUsers('suspended'),
   },
   integrations: { Core: {
     UploadFile: uploadFile,
