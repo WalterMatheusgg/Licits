@@ -1,5 +1,19 @@
 import {json,options,authorize,member,readJson,errorResponse,HttpError} from '../_shared/security.ts';
 import {mailDeliveryReady,sendConfiguredEmail} from '../_shared/email-provider.ts';
+// Configured on the Supabase server after the production Vercel domain exists.
+// Never derive redirect URLs from a request Origin/Host or user-submitted payload.
+function appRedirectUrl(): string | undefined {
+  const configured=(Deno.env.get('PUBLIC_APP_URL')||'').trim();
+  if(!configured) return undefined; // Supabase Auth Site URL is the fallback.
+  try {
+    const url=new URL(configured);
+    if(url.username||url.password||url.search||url.hash)throw new Error('invalid');
+    if(url.protocol!=='https:' && !(url.protocol==='http:' && ['localhost','127.0.0.1'].includes(url.hostname)))throw new Error('invalid');
+    return url.origin + '/';
+  } catch {
+    throw new HttpError('PUBLIC_APP_URL inválida. Configure uma origem HTTPS pública.',500);
+  }
+}
 const roleLabels: Record<string,string> = {
   organization_admin:'Administrador',
   gestor:'Gestor',
@@ -20,6 +34,7 @@ Deno.serve(async req => {
     let id=existing.data?.id;
     let emailSent=false;
     let actionLink: string | undefined;
+    const redirectTo=appRedirectUrl();
     if(id){
       const existingMembership=await admin.from('organization_members')
         .select('id,status').eq('organization_id',org).eq('user_id',id).maybeSingle();
@@ -30,11 +45,11 @@ Deno.serve(async req => {
     const capacity=await admin.rpc('reserve_integration_capacity',{p_organization_id:org,p_user_id:user.id,p_operation:'invite-member'});
     if(capacity.error)throw capacity.error;
     if(id){
-      const link=await admin.auth.admin.generateLink({type:'magiclink',email});
+      const link=await admin.auth.admin.generateLink({type:'magiclink',email,...(redirectTo?{options:{redirectTo}}:{})});
       if(link.error||!link.data.properties?.action_link)throw link.error||Error('Não foi possível gerar o link de acesso.');
       actionLink=link.data.properties.action_link;
     }else{
-      const invitation=await admin.auth.admin.inviteUserByEmail(email);
+      const invitation=await admin.auth.admin.inviteUserByEmail(email,redirectTo?{redirectTo}:{});
       if(invitation.error||!invitation.data.user)throw invitation.error||Error('Não foi possível enviar convite.');
       id=invitation.data.user.id;
     }
