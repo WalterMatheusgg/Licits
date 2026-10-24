@@ -69,9 +69,13 @@ Deno.serve(async req => {
     // Sending the token hash to our HTTPS callback means GoTrue SITE_URL and
     // URI_ALLOW_LIST are not involved. The callback calls verifyOtp, and only
     // the signed-in, email-confirmed invited user can accept their org access.
+    // A URL fragment is not sent in HTTP requests or Referer headers, so the
+    // one-time token is kept out of hosting access logs.
     const confirm=new URL('/auth/confirm',appUrl);
-    confirm.searchParams.set('token_hash',generated.data.properties.hashed_token);
-    confirm.searchParams.set('type',type);
+    confirm.hash=new URLSearchParams({
+      token_hash:generated.data.properties.hashed_token,
+      type,
+    }).toString();
     await sendConfiguredEmail({
       to:email,
       subject:'Convite para acessar o Licits',
