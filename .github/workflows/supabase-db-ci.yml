@@ -69,6 +69,11 @@ jobs:
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 \
             -f supabase/tests/tenant_isolation_integration.sql
+      - name: Test all five organization roles and two-tenant RLS matrix
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f supabase/tests/tenant_role_matrix_integration.sql
       - name: Test invitation acceptance and integration quotas
         run: |
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
