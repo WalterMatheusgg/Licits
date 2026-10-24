@@ -24,8 +24,8 @@ jobs:
           cache: npm
       - name: Install shared package dependencies
         run: npm ci --no-audit --no-fund
-      - name: Unit tests for ERP adapters
-        run: deno test supabase/functions/_shared/erp-adapter.test.ts
+      - name: Unit tests for Edge shared policies and adapters
+        run: deno test supabase/functions/_shared/*.test.ts
       - name: Validate Edge Functions
         run: |
           deno check supabase/functions/invite-member/index.ts
