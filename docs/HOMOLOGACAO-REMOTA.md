@@ -9,7 +9,7 @@ A verificação automática local **não equivale** à homologação do Supabase
 
 Não configure senha do banco, service_role nem tokens administrativos para esse teste. As chaves não são mostradas nos logs. Em Actions, execute manualmente o workflow **Licits - Homologacao remota somente leitura**.
 
-O script verifica conectividade de Supabase Auth e se requisições **anônimas** não revelam contratos, vínculos de usuários ou credenciais de integração. Ele não autentica usuários reais nem envia e-mails, portanto não deve ser apresentado como teste de produção concluído.
+O script verifica conectividade de Supabase Auth e se requisições **anônimas** não revelam dados das organizações, contratos, fornecedores, documentos, fiscalizações, movimentações, auditoria, filas de alertas, perfis ou credenciais de integração (18 tabelas). Ele não autentica usuários reais nem envia e-mails, portanto não deve ser apresentado como teste de produção concluído.
 
 ## Aceite obrigatório antes de colocar usuários reais
 
@@ -32,3 +32,5 @@ A consulta de `scripts/verify-audit-readonly.sql` **não altera registros**: ver
 Use o SQL Editor do projeto de **homologação** para executar o script, depois confira `npx supabase migration list` e as versões em `npx supabase functions list` no terminal autenticado. O sucesso no GitHub Actions significa somente que a migração passou no banco descartável da CI, não que foi implantada no Supabase real.
 
 Se a contagem histórica for positiva, trate a retenção/expurgo com o responsável por LGPD e o administrador do banco; não apague a trilha de auditoria indiscriminadamente.
+
+Uma falha de conexão, tabela ausente ou resposta anônima inesperada deve bloquear a homologação; o teste não usa chaves de serviço, não altera dados e não testa fluxos autenticados. Para a aceitação final, testar duas organizações de homologação com usuários reais de teste e autorizações distintas.
