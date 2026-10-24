@@ -74,6 +74,10 @@ jobs:
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
             -v ON_ERROR_STOP=1 \
             -f supabase/tests/tenant_role_matrix_integration.sql
+      - name: Verify archived contracts and immutable audit history
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 -f supabase/tests/contract_history_integration.sql
       - name: Test invitation acceptance and integration quotas
         run: |
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
