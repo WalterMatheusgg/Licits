@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { contractStatuses, contractStatusDescription } from '@/lib/contractStatus';
 
 const MODALITIES = [
   { value: 'pregao_eletronico', label: 'Pregão Eletrônico' },
@@ -16,33 +17,6 @@ const MODALITIES = [
   { value: 'concorrencia', label: 'Concorrência' },
   { value: 'tomada_precos', label: 'Tomada de Preços' },
   { value: 'convite', label: 'Convite' },
-  { value: 'registro_precos', label: 'Registro de Preços' },
-  { value: 'outro', label: 'Outro' },
-];
-
-const TYPES = [
-  { value: 'administrativo', label: 'Administrativo' },
-  { value: 'servicos_terceirizados', label: 'Serviços Terceirizados' },
-  { value: 'limpeza', label: 'Prestação de Serviço de Limpeza' },
-  { value: 'servicos_graficos', label: 'Serviços Gráficos' },
-  { value: 'tecnologia', label: 'Implementação de Ferramenta Tecnológica' },
-  { value: 'locacao_veiculos', label: 'Locação de Veículos' },
-  { value: 'itens_escritorio', label: 'Itens de Escritório' },
-  { value: 'copa_cozinha', label: 'Copa e Cozinha' },
-  { value: 'generos_alimenticios', label: 'Gêneros Alimentícios' },
-  { value: 'mobiliario', label: 'Mobiliário' },
-  { value: 'material_consumo', label: 'Material de Consumo' },
-  { value: 'engenharia', label: 'Engenharia' },
-  { value: 'arquitetura', label: 'Arquitetura' },
-  { value: 'material_informatica', label: 'Material de Informática' },
-  { value: 'material_expediente', label: 'Material de Expediente' },
-  { value: 'eletrica_hidraulica', label: 'Insumos de Elétrica e Hidráulica' },
-  { value: 'eletrodomesticos', label: 'Eletrodomésticos' },
-  { value: 'alarme_seguranca', label: 'Alarme e Segurança' },
-  { value: 'registro_precos', label: 'Registro de Preços' },
-  { value: 'fornecimento', label: 'Fornecimento' },
-  { value: 'obra', label: 'Obra' },
-  { value: 'consultoria', label: 'Consultoria' },
   { value: 'outro', label: 'Outro' },
 ];
 
@@ -95,11 +69,11 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Dados do Contrato</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><Label>Nº do Contrato/ARP *</Label><Input value={form.contract_number} onChange={e => update('contract_number', e.target.value)} required placeholder="Ex: 001/2025" />{err('contract_number')}</div>
+          <div><Label>Número do contrato *</Label><Input value={form.contract_number} onChange={e => update('contract_number', e.target.value)} required placeholder="Ex: 001/2025" />{err('contract_number')}</div>
           <div><Label>Nº do Processo SEI</Label><Input value={form.sei_number} onChange={e => update('sei_number', e.target.value)} placeholder="Ex: 08219.000001/2025-01" /></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><Label>Nº do Pregão Eletrônico</Label><Input value={form.auction_number} onChange={e => update('auction_number', e.target.value)} placeholder="Ex: 001/2024" /></div>
+          <div><Label>Número do pregão (se houver)</Label><Input value={form.auction_number} onChange={e => update('auction_number', e.target.value)} placeholder="Ex: 001/2024" /></div>
           <div><Label>Setor Responsável</Label><Input value={form.responsible_sector} onChange={e => update('responsible_sector', e.target.value)} /></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -116,23 +90,28 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
           </div>
         </div>
         <div><Label>Objeto *</Label><Textarea value={form.object} onChange={e => update('object', e.target.value)} required />{err('object')}</div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div><Label>Modalidade</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><Label>Modalidade da contratação</Label>
             <Select value={form.modality} onValueChange={v => update('modality', v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{MODALITIES.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent></Select></div>
           <div><Label>Tipo de Contrato</Label><Input value={form.contract_type} onChange={e => update('contract_type', e.target.value)} placeholder="Ex: Serviços de Limpeza, Fornecimento de Material..." /></div>
-          <div><Label>Status</Label>
-            <Select value={form.status} onValueChange={v => update('status', v)}><SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="em_analise">Em Análise</SelectItem>
-                <SelectItem value="em_analise_slic">Providências no SLIC</SelectItem>
-                <SelectItem value="suspenso">Suspenso</SelectItem><SelectItem value="encerrado">Encerrado</SelectItem>
-              </SelectContent></Select></div>
+
         </div>
+        {!initialData && (
+          <div className="space-y-2">
+            <Label>Situação inicial</Label>
+            <Select value={form.status} onValueChange={v => update('status', v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione a situação" /></SelectTrigger>
+              <SelectContent>{contractStatuses.map(option => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}</SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{contractStatusDescription(form.status)} Depois de cadastrar, altere a situação na página do contrato.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div><Label>Data de Início</Label><Input type="date" value={form.start_date} onChange={e => update('start_date', e.target.value)} /></div>
-          <div><Label>Data de Vigência</Label><Input type="date" value={form.end_date} onChange={e => update('end_date', e.target.value)} /></div>
+          <div><Label>Término da vigência</Label><Input type="date" value={form.end_date} onChange={e => update('end_date', e.target.value)} /></div>
           <div><Label>Valor Total (R$)</Label><Input type="number" step="0.01" value={form.total_value} onChange={e => update('total_value', parseFloat(e.target.value) || 0)} />{err('total_value')}</div>
         </div>
       </div>
@@ -161,7 +140,7 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Prorrogação</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Prorrogações (se aplicável)</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div><Label>Possibilidade</Label>
             <Select value={form.can_extend} onValueChange={v => update('can_extend', v)}><SelectTrigger><SelectValue /></SelectTrigger>
@@ -174,7 +153,7 @@ export default function ContractForm({ onSave, isLoading, initialData }) {
       <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} /></div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando...</> : 'Salvar Contrato'}
+        {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando...</> : initialData ? 'Salvar informações' : 'Cadastrar contrato'}
       </Button>
     </form>
   );
