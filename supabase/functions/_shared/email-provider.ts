@@ -1,6 +1,6 @@
 // Provider adapter: Gmail API for domain-free sending, or Resend for verified domains.
 // Secrets are read only inside Supabase Edge Functions and never sent to clients.
-export type MailRequest = { to: string; subject: string; text: string; idempotencyKey?: string };
+export type MailRequest = { to: string; subject: string; text: string; html?: string; idempotencyKey?: string };
 export type EnvReader = (name: string) => string | undefined;
 type Fetcher = typeof fetch;
 const currentEnv: EnvReader = (name) => Deno.env.get(name);
@@ -32,7 +32,11 @@ function encode64(value: string): string {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
-function mimeMessage(from: string, to: string, subject: string, text: string): string {
+function mimeBody(value: string): string {
+  const encoded = encode64(value.replace(/\r\n?/g, '\n').replace(/\n/g, '\r\n'));
+  return encoded.match(/.{1,76}/g)?.join('\r\n') || '';
+}
+function mimeMessage(from: string, to: string, subject: string, text: string, html?: string): string {
   // Encode UTF-8 subject in RFC 2047 encoded words, max 40 bytes each.
   const pieces: string[] = [];
   let part = '';
@@ -44,17 +48,39 @@ function mimeMessage(from: string, to: string, subject: string, text: string): s
     part += char;
   }
   if (part) pieces.push('=?UTF-8?B?' + encode64(part) + '?=');
-  const encodedBody = encode64(text.replace(/\r\n?/g, '\n').replace(/\n/g, '\r\n'));
-  const bodyLines = encodedBody.match(/.{1,76}/g)?.join('\r\n') || '';
-  return [
+  const headers = [
     'From: <' + checkedEmail(from) + '>',
     'To: <' + checkedEmail(to) + '>',
     'Subject: ' + pieces.join('\r\n '),
     'MIME-Version: 1.0',
+  ];
+  if (!html) return [
+    ...headers,
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
     '',
-    bodyLines,
+    mimeBody(text),
+  ].join('\r\n');
+
+  // A multipart/alternative message lets email clients render HTML or fall
+  // back to readable text, without exposing HTML markup as plain text.
+  const boundary = 'licits-alt-' + crypto.randomUUID();
+  return [
+    ...headers,
+    'Content-Type: multipart/alternative; boundary="' + boundary + '"',
+    '',
+    '--' + boundary,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    mimeBody(text),
+    '--' + boundary,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    mimeBody(html),
+    '--' + boundary + '--',
+    '',
   ].join('\r\n');
 }
 export async function sendConfiguredEmail(
@@ -63,7 +89,7 @@ export async function sendConfiguredEmail(
   request: Fetcher = fetch,
 ): Promise<string> {
   const to = checkedEmail(message.to);
-  if (!message.subject.trim() || !message.text.trim()) throw Error('Missing email content');
+  if (!message.subject.trim() || !message.text.trim() || (message.html !== undefined && !message.html.trim())) throw Error('Missing email content');
   const p = provider(read);
   if (p === 'resend') {
     const headers: Record<string, string> = {
@@ -76,6 +102,7 @@ export async function sendConfiguredEmail(
       body: JSON.stringify({
         from: checkedEmail(required(read, 'RESEND_FROM_EMAIL')),
         to: [to], subject: message.subject, text: message.text,
+        ...(message.html ? {html: message.html} : {}),
       }),
     });
     if (!response.ok) throw Error('Resend rejected the message: HTTP ' + response.status);
@@ -99,7 +126,7 @@ export async function sendConfiguredEmail(
   const auth = await token.json();
   if (typeof auth?.access_token !== 'string' || !auth.access_token)
     throw Error('Gmail authorization returned no access token');
-  const raw = encode64(mimeMessage(sender, to, message.subject, message.text))
+  const raw = encode64(mimeMessage(sender, to, message.subject, message.text, message.html))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   const response = await request('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
