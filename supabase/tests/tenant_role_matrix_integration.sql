@@ -35,6 +35,18 @@ VALUES
  ('d0000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001','RLS-A-CI','Tenant A contract','a0000000-0000-4000-8000-000000000001','ativo',1000),
  ('d0000000-0000-4000-8000-000000000002','b0000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-000000000002','RLS-B-CI','Tenant B contract','a0000000-0000-4000-8000-000000000006','ativo',2000);
 
+-- Historical own requests and targeted notifications must be revoked with membership.
+INSERT INTO public.admin_requests(id,organization_id,requester_id,request_type,description)
+VALUES ('e0000000-0000-4000-8000-000000000001',
+ 'b0000000-0000-4000-8000-000000000001',
+ 'a0000000-0000-4000-8000-000000000005','ajuste','Viewer own admin request');
+
+INSERT INTO public.notifications(id,organization_id,target_user_id,title,message,type)
+VALUES ('e0000000-0000-4000-8000-000000000002',
+ 'b0000000-0000-4000-8000-000000000001',
+ 'a0000000-0000-4000-8000-000000000005','Viewer notification',
+ 'Notification belonging to tenant A','geral');
+
 -- Real PostgreSQL RLS evaluation, not a mock: switch away from postgres.
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.role','authenticated',true);
@@ -170,6 +182,61 @@ BEGIN
   END IF;
 END
 $outsider$;
+
+-- A viewer can read their own request and notification, and mark only read_at.
+SELECT set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000005',true);
+DO $viewer$
+DECLARE affected integer; denied boolean;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.admin_requests WHERE id='e0000000-0000-4000-8000-000000000001')
+    OR NOT EXISTS(SELECT 1 FROM public.notifications WHERE id='e0000000-0000-4000-8000-000000000002') THEN
+   RAISE EXCEPTION 'Active viewer cannot read personal request/notification';
+ END IF;
+ UPDATE public.notifications SET read_at=now()
+ WHERE id='e0000000-0000-4000-8000-000000000002';
+ GET DIAGNOSTICS affected=ROW_COUNT;
+ IF affected<>1 THEN RAISE EXCEPTION 'Targeted read receipt update denied'; END IF;
+ denied:=false;
+ BEGIN
+   UPDATE public.notifications SET title='FORGED TITLE'
+   WHERE id='e0000000-0000-4000-8000-000000000002';
+ EXCEPTION WHEN insufficient_privilege THEN denied:=true;
+ END;
+ IF NOT denied THEN RAISE EXCEPTION 'Viewer could rewrite notification title'; END IF;
+ denied:=false;
+ BEGIN
+   UPDATE public.notifications
+   SET organization_id='b0000000-0000-4000-8000-000000000002'
+   WHERE id='e0000000-0000-4000-8000-000000000002';
+ EXCEPTION WHEN insufficient_privilege THEN denied:=true;
+ END;
+ IF NOT denied THEN RAISE EXCEPTION 'Viewer could move notification to tenant B'; END IF;
+END
+$viewer$;
+
+-- Suspension revokes historical admin-request visibility and notification access.
+SELECT set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',true);
+UPDATE public.organization_members SET status='suspended'
+WHERE organization_id='b0000000-0000-4000-8000-000000000001'
+ AND user_id='a0000000-0000-4000-8000-000000000005';
+
+SELECT set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000005',true);
+DO $suspended$
+DECLARE affected integer;
+BEGIN
+ IF public.is_organization_member('b0000000-0000-4000-8000-000000000001')
+   OR EXISTS(SELECT 1 FROM public.admin_requests
+     WHERE id='e0000000-0000-4000-8000-000000000001')
+   OR EXISTS(SELECT 1 FROM public.notifications
+     WHERE id='e0000000-0000-4000-8000-000000000002') THEN
+   RAISE EXCEPTION 'Suspended user retained tenant data access';
+ END IF;
+ UPDATE public.notifications SET read_at=NULL
+ WHERE id='e0000000-0000-4000-8000-000000000002';
+ GET DIAGNOSTICS affected=ROW_COUNT;
+ IF affected<>0 THEN RAISE EXCEPTION 'Suspended user changed notification'; END IF;
+END
+$suspended$;
 
 RESET ROLE;
 ROLLBACK;
