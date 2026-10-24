@@ -397,6 +397,23 @@ export const dataClient = {
       return unwrap(result);
     },
   },
+  contracts: {
+    listArchived: async () => {
+      const ctx = await context();
+      return unwrap(await supabase.rpc('list_archived_contracts', {
+        p_organization_id: ctx.org,
+      }));
+    },
+    history: async (contractId, offset = 0) => {
+      const ctx = await context();
+      return unwrap(await supabase.rpc('get_contract_history', {
+        p_organization_id: ctx.org,
+        p_contract_id: contractId,
+        p_limit: 50,
+        p_offset: Math.max(0, Number(offset) || 0),
+      }));
+    },
+  },
   finance: {
     alerts: async () => {
       const ctx = await context();
