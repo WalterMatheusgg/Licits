@@ -25,6 +25,21 @@
 
 **Atenção:** o sistema não configura automaticamente o Supabase nem o Resend por este repositório. Sem os secrets e deploy, os alertas permanecem na fila e na interface, **mas nenhum e-mail externo será entregue**.
 
+## Diagnóstico de implantação e critérios de aceite
+
+**Falha observada no GitHub Actions:** a execução pode parar antes de chamar o Supabase quando faltam `LICITS_DISPATCH_URL` ou `LICITS_ALERT_DISPATCH_SECRET`. Isso não é um erro do Resend nem significa que a Edge Function foi executada. Crie os dois secrets em **Settings → Secrets and variables → Actions**; não copie seus valores para o repositório.
+
+Use como URL do dispatcher do ambiente de homologação `https://nefimqoszcidsnqvlnnh.supabase.co/functions/v1/dispatch-budget-alerts` somente se esse for realmente o projeto correto. Gere `ALERT_DISPATCH_SECRET` aleatório com pelo menos 32 caracteres no Supabase e copie o **mesmo valor** para `LICITS_ALERT_DISPATCH_SECRET` no GitHub. Configure `RESEND_API_KEY` e `RESEND_FROM_EMAIL` (remetente de domínio verificado) exclusivamente nos secrets do Supabase.
+
+1. Verifique que `dispatch-budget-alerts` está implantada com validação interna de `X-Alert-Token`. O parâmetro `--no-verify-jwt` não elimina essa validação própria.
+2. Execute **Run workflow** manualmente em ambiente de homologação.
+3. Resultado `processed: 0` comprova somente que a função respondeu, **não** a entrega de mensagens.
+4. Para validar envio, gere um alerta com contrato fictício, fiscal e administradores ativos com e-mails de homologação autorizados; confira `sent`/`failed`, o status no banco, o painel Resend e a caixa de entrada.
+5. Se a função responder HTTP 503, examine existência dos segredos e RPCs no Supabase sem exibir valores. Se retornar HTTP 401, confira a correspondência do segredo entre GitHub e Supabase.
+6. Mantenha o cadastro de recipients restrito a membros ativos e perfis ativos. A Edge Function grava `sent` após aceite da API do Resend; aceitação **não comprova entrega na caixa de entrada**, que precisa ser verificada no provedor.
+
+Os testes Deno de políticas de destinatários e idempotência são executados pelo workflow `edge-functions-ci.yml`. Eles não substituem um teste real de envio.
+
 ## Melhoria planejada de produção
 
 O serviço usa chave de idempotência por destinatário ao falar com o Resend, evitando reenvio ao repetir tentativas quando o provedor respeita a chave. A fila registra sucesso ou erro e faz novas tentativas. Para produção de maior escala, mover o agendamento para Supabase Cron, inserir tabela de entrega por destinatário e monitorar taxa de rejeição.
