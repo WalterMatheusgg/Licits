@@ -414,9 +414,9 @@ export const dataClient = {
   },
   integrations: { Core: {
     UploadFile: uploadFile,
-    SendEmail: async ({ to, subject, body }) => {
+    SendEmail: async ({ to, subject, body, html }) => {
       const ctx = await context();
-      return invokeFunction('send-email', { to, subject, body, organization_id: ctx.org });
+      return invokeFunction('send-email', { to, subject, body, html, organization_id: ctx.org });
     },
     InvokeLLM: async ({ prompt, response_json_schema }) => {
       const ctx = await context();
