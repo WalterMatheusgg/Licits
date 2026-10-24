@@ -78,3 +78,52 @@ Deno.test('Resend mode retains per-recipient idempotency headers', async () => {
   }, (key) => config[key], request);
   check(sent, 'Resend not invoked');
 });
+
+
+Deno.test('Gmail HTML messages use multipart/alternative with readable plain text fallback', async () => {
+  let raw = '';
+  const request: typeof fetch = async (url, init) => {
+    if (String(url).includes('/token')) return Response.json({access_token: 'fake-token'});
+    const data = JSON.parse(String(init?.body));
+    raw = atob(data.raw.replace(/-/g, '+').replace(/_/g, '/'));
+    return Response.json({id: 'gmail-html-id'});
+  };
+  const id = await sendConfiguredEmail({
+    to:'manager@outlook.com',
+    subject:'Resumo Licits',
+    text:'Nenhum alerta crítico identificado hoje.',
+    html:'<h2>Resumo do Licits</h2><p>✅ Nenhum alerta crítico.</p>',
+  }, key => gmailEnv[key], request);
+  check(id === 'gmail-html-id', 'Wrong Gmail HTML message id');
+  check(raw.includes('Content-Type: multipart/alternative;'), 'Missing multipart MIME header');
+  check(raw.includes('Content-Type: text/plain; charset=UTF-8'), 'Missing text/plain alternative');
+  check(raw.includes('Content-Type: text/html; charset=UTF-8'), 'Missing text/html alternative');
+  const decodePart = (mimeType: string): string => {
+    const marker = 'Content-Type: ' + mimeType + '; charset=UTF-8';
+    const part = raw.split(marker)[1];
+    check(Boolean(part), 'Missing ' + mimeType + ' part');
+    const encoded = part.split('\r\n\r\n')[1].split('--')[0].replace(/\s/g, '');
+    return new TextDecoder().decode(Uint8Array.from(atob(encoded), char => char.charCodeAt(0)));
+  };
+  check(decodePart('text/plain').includes('Nenhum alerta crítico'), 'Plain text content missing');
+  check(decodePart('text/html').includes('<h2>Resumo do Licits</h2>'), 'HTML content missing');
+  check(decodePart('text/html').includes('✅'), 'UTF-8 HTML characters not preserved');
+});
+
+Deno.test('Resend HTML messages include explicit HTML and plain fallback', async () => {
+  const env: Record<string, string> = {
+    EMAIL_PROVIDER: 'resend',
+    RESEND_API_KEY: 'test',
+    RESEND_FROM_EMAIL: 'alerts@example.org',
+  };
+  let received: Record<string, unknown> = {};
+  const request: typeof fetch = async (_url, init) => {
+    received = JSON.parse(String(init?.body));
+    return Response.json({id:'resend-html-id'});
+  };
+  await sendConfiguredEmail({
+    to:'user@gmail.com', subject:'Teste', text:'Sem alertas', html:'<p>Sem alertas</p>',
+  }, key => env[key], request);
+  check(received.text === 'Sem alertas', 'Resend text body missing');
+  check(received.html === '<p>Sem alertas</p>', 'Resend HTML body missing');
+});
