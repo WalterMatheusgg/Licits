@@ -160,7 +160,7 @@ O agendamento de alertas exige `LICITS_DISPATCH_URL` e `LICITS_ALERT_DISPATCH_SE
 bash scripts/configurar-alertas.sh
 ```
 
-**Situação atual da integração:** o código Gmail está publicado, e as duas funções foram implantadas no projeto Supabase de homologação. **A confirmação de um e-mail real recebido ainda está pendente.** Uma execução com `processed: 0` comprova apenas a chamada ao dispatcher.
+**Situação atual da integração (24/10/2026):** o envio **manual pelo Gmail API foi confirmado com recebimento real na caixa de entrada**. A primeira mensagem apresentou marcação HTML como texto; o código foi corrigido para enviar HTML com alternativa em texto puro, mas **a nova formatação ainda precisa ser implantada e testada**. O despacho automático de alertas de contratos ainda requer teste ponta a ponta. Uma execução com `processed: 0` comprova apenas a chamada ao dispatcher.
 
 > Em aplicativos OAuth externos no estado *Testing*, Refresh Tokens do Google podem expirar em aproximadamente **sete dias**. Para operar continuamente, regularize o fluxo de autorização e monitore falhas; Gmail não oferece envio ilimitado. Convites enviados por Supabase Auth utilizam uma configuração de e-mail independente.
 
@@ -194,7 +194,7 @@ deno test supabase/functions/_shared/*.test.ts
 - Auditoria, verificação de destinatários e tratamento seguro de erros.
 - Tokens de provedores e chaves administrativas **nunca** versionados ou expostos em `VITE_`.
 
-**Pronto para produção? Ainda não.** É necessário solucionar o CI SQL, validar fluxos e isolamento no ambiente remoto, comprovar entrega de e-mail, manter OAuth estável, configurar monitoramento e testar restauração integral de banco e arquivos.
+**Pronto para produção? Ainda não.** É necessário solucionar o CI SQL, validar fluxos e isolamento no ambiente remoto, comprovar entrega dos alertas automáticos, manter OAuth estável, configurar monitoramento e testar restauração integral de banco e arquivos.
 
 [Políticas de segurança](docs/SECURITY.md) · [Homologação remota](docs/HOMOLOGACAO-REMOTA.md) · [Backup e restauração](docs/PRODUCAO-RECUPERACAO.md)
 
