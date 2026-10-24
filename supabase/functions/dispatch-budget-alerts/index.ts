@@ -13,6 +13,7 @@ async function deliverAlert(db: any, alert: any, contract: any, subject: string,
   const recipients = eligibleAlertRecipients(people.data || [], ids);
   if (!recipients.length) throw Error('No validated recipient e-mail');
   for (const person of recipients) {
+    if (typeof person.email !== 'string' || !person.email.trim()) throw Error('Recipient missing e-mail');
     await sendConfiguredEmail({
       to: person.email,
       subject,
