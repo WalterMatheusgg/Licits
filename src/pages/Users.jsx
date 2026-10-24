@@ -82,6 +82,7 @@ export default function Users() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
     },
+    onError: (error) => window.alert('Não foi possível excluir o acesso: ' + error.message),
   });
 
   const reactivateMutation = useMutation({
@@ -174,6 +175,31 @@ export default function Users() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                {u.id !== currentUser?.id && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-red-600" disabled={deleteMutation.isPending}>
+                        <Trash2 className="w-3 h-3 mr-1" /> Excluir acesso
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir acesso desta organização?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          <strong>{u.full_name || u.email}</strong> sairá da lista de bloqueados.
+                          O acesso desta organização será removido, mas toda a atividade histórica permanecerá.
+                          O mesmo e-mail poderá ser convidado novamente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteMutation.mutate(u.id)}>
+                          Excluir acesso
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </Card>
           ))}
@@ -265,19 +291,19 @@ export default function Users() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:bg-red-50">
-                            <Trash2 className="w-3 h-3" /> Excluir
+                            <Trash2 className="w-3 h-3" /> Excluir acesso
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                            <AlertDialogTitle>Excluir acesso desta organização?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              O perfil e a conta de <strong>{u.full_name || u.email}</strong> serão excluídos de todas as organizações. Contratos, ocorrências, solicitações e auditoria criados por essa pessoa serão mantidos. O e-mail poderá ser cadastrado e convidado novamente depois.
+                              <strong>{u.full_name || u.email}</strong> perderá o acesso a esta organização e desaparecerá das listas de usuários e bloqueados. Sua conta de autenticação, outras organizações e todos os contratos, fiscalizações, ocorrências e registros de auditoria serão preservados. O mesmo e-mail poderá ser convidado novamente.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteMutation.mutate(u.id)}>Excluir</AlertDialogAction>
+                            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteMutation.mutate(u.id)}>Excluir acesso</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
