@@ -1,16 +1,15 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { permittedAlertUserIds, eligibleAlertRecipients, alertIdempotencyKey } from '../_shared/alert-delivery.ts';
 
 async function deliverAlert(db: any, alert: any, contract: any, subject: string, text: string, resendKey: string, sender: string) {
   const roles = await db.from('organization_members')
     .select('user_id,role,status').eq('organization_id',alert.organization_id).eq('status','active');
   if (roles.error) throw roles.error;
-  const ids = [...new Set((roles.data || []).filter(
-    (role: any) => role.user_id === contract.fiscal_user_id || role.role === 'organization_admin'
-  ).map((role: any) => role.user_id))];
+  const ids = permittedAlertUserIds(roles.data || [], contract.fiscal_user_id);
   if (!ids.length) throw Error('No active fiscal or administrator');
   const people = await db.from('profiles').select('id,email,status').in('id',ids).eq('status','active');
   if (people.error) throw people.error;
-  const recipients = (people.data || []).filter((person: any) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(person.email || ''));
+  const recipients = eligibleAlertRecipients(people.data || [], ids);
   if (!recipients.length) throw Error('No validated recipient e-mail');
   for (const person of recipients) {
     const response = await fetch('https://api.resend.com/emails', {
@@ -18,7 +17,7 @@ async function deliverAlert(db: any, alert: any, contract: any, subject: string,
       headers: {
         'Authorization': 'Bearer ' + resendKey,
         'Content-Type': 'application/json',
-        'Idempotency-Key': 'licits-' + alert.id + '-' + person.id,
+        'Idempotency-Key': alertIdempotencyKey(alert.id, person.id),
       },
       body: JSON.stringify({from: sender, to: [person.email], subject, text}),
     });
@@ -72,8 +71,8 @@ Deno.serve(async (req) => {
       await deliverAlert(db,alert,contract,subject,message,resendKey,sender);
       const done=await db.from('contract_budget_alerts').update({
         status:'sent',sent_at:new Date().toISOString(),last_error:null
-      }).eq('id',alert.id).eq('status','processing');
-      if(done.error)throw done.error;
+      }).eq('id',alert.id).eq('status','processing').select('id').maybeSingle();
+      if(done.error || !done.data) throw Error('Could not confirm budget alert delivery state');
       sent++;
     } catch(e){
       failed++;
@@ -123,8 +122,8 @@ Deno.serve(async (req) => {
       await deliverAlert(db,alert,contract,subject,message,resendKey,sender);
       const done = await db.from('contract_expiry_alerts').update({
         status:'sent',sent_at:new Date().toISOString(),last_error:null,
-      }).eq('id',alert.id).eq('status','processing');
-      if (done.error) throw done.error;
+      }).eq('id',alert.id).eq('status','processing').select('id').maybeSingle();
+      if (done.error || !done.data) throw Error('Could not confirm expiry alert delivery state');
       sent++;
     } catch (error) {
       failed++;
