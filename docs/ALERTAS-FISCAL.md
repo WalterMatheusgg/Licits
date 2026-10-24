@@ -54,7 +54,7 @@ Configuração sem compartilhar segredos:
 1. Crie/abra um projeto em https://console.cloud.google.com/apis/library/gmail.googleapis.com e ative Gmail API.
 2. Configure a tela OAuth Consent e crie um OAuth Client ID do tipo Web application. Cadastre o Redirect URI: https://developers.google.com/oauthplayground
 3. No navegador, abra https://developers.google.com/oauthplayground, nas configurações habilite Use your own OAuth credentials e preencha Client ID e Client Secret.
-4. Autorize apenas o escopo https://www.googleapis.com/auth/gmail.send usando o Gmail remetente. Troque o código por tokens no OAuth Playground e guarde o refresh token com segurança.
+4. No OAuth Playground, selecione acesso offline (offline access) e, se necessário, force a tela de consentimento (consent). Autorize apenas o escopo https://www.googleapis.com/auth/gmail.send usando o Gmail remetente. Troque o código por tokens e guarde o refresh token com segurança.
 5. Atenção: em OAuth Testing, refresh tokens podem expirar em sete dias; para automação contínua, revise o status de publicação e a necessidade de verificação do Google (gmail.send é escopo sensível).
 6. Execute no Codespaces: bash scripts/configurar-gmail.sh; informe Gmail remetente, OAuth Client ID, Client Secret e Refresh Token. O script oculta os segredos e grava em Supabase EMAIL_PROVIDER=gmail, GMAIL_FROM_EMAIL, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET e GMAIL_REFRESH_TOKEN.
 7. Faça deploy: npx supabase functions deploy send-email; e npx supabase functions deploy dispatch-budget-alerts --no-verify-jwt. O dispatcher continua autenticando com X-Alert-Token, mesmo com JWT desabilitado.
