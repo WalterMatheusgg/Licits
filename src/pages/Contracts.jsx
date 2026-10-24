@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { dataClient } from '@/api/dataClient';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,235 +7,202 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, FileText, Sparkles, Loader2, Trash2, ChevronDown, ClipboardList } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Link as RouterLink } from 'react-router-dom';
-import { differenceInDays } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect } from 'react';
-import ContractForm from '../components/contracts/ContractForm';
-import ContractAIUpload from '../components/contracts/ContractAIUpload';
-import { logAudit } from '@/lib/audit';
+import { Archive, ArrowRight, FileText, History, Loader2, Plus, Search, Sparkles } from 'lucide-react';
+import { dataClient } from '@/api/dataClient';
+import { contractStatuses, contractStatusLabel, contractStatusStyle } from '@/lib/contractStatus';
+import ContractHistory from '@/components/contracts/ContractHistory';
+import ContractForm from '@/components/contracts/ContractForm';
+import ContractAIUpload from '@/components/contracts/ContractAIUpload';
 
-const statusBadge = {
-  ativo: 'bg-emerald-500/10 text-emerald-600',
-  vencido: 'bg-red-500/10 text-red-600',
-  encerrado: 'bg-gray-500/10 text-gray-600',
-  suspenso: 'bg-amber-500/10 text-amber-600',
-  em_analise: 'bg-blue-500/10 text-blue-600',
-  em_analise_slic: 'bg-purple-500/10 text-purple-600',
-  cancelado: 'bg-red-700/10 text-red-700'
-};
-
-const statusLabel = {
-  ativo: 'Ativo', vencido: 'Vencido', encerrado: 'Encerrado',
-  suspenso: 'Suspenso',     em_analise: 'Em Análise',
-  em_analise_slic: 'Providências no SLIC', cancelado: 'Cancelado'
-};
-
-const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const date = value => value ? new Date(value).toLocaleDateString('pt-BR') : '—';
 
 export default function Contracts() {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'contract' | 'price_registration'
+  const [showArchived, setShowArchived] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showAI, setShowAI] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
+  const [historyId, setHistoryId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const q = searchParams.get('q');
-    if (q) setSearch(q);
-  }, [searchParams]);
+  useEffect(() => { setSearch(searchParams.get('q') || ''); }, [searchParams]);
 
-  useEffect(() => { dataClient.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  const { data: currentUser } = useQuery({ queryKey: ['contracts-user'], queryFn: () => dataClient.auth.me() });
+  const isManager = ['admin','gestor'].includes(currentUser?.role);
 
-  const { data: contracts = [], isLoading, isError, error: loadError } = useQuery({
+  const { data: active = [], isLoading, isError, error } = useQuery({
     queryKey: ['contracts'],
     queryFn: () => dataClient.entities.Contract.list('-created_date'),
-    initialData: [],
   });
-
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
+  const { data: archived = [], isLoading: loadingArchive, error: archiveError } = useQuery({
+    queryKey: ['archived-contracts'],
+    queryFn: () => dataClient.contracts.listArchived(),
+    enabled: isManager && showArchived,
+  });
 
   const createMutation = useMutation({
-    mutationFn: (data) => dataClient.entities.Contract.create(data),
-    onSuccess: (created) => {
-      setSaveError('');
+    mutationFn: data => dataClient.entities.Contract.create(data),
+    onSuccess: () => {
+      setErrorMessage('');
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      setShowForm(false); setShowAI(false);
-      logAudit('cadastro', 'Contract', created.id, `Contrato ${created.contract_number} cadastrado`);
+      setShowForm(false);
     },
-    onError: (err) => setSaveError(err.message || 'Não foi possível cadastrar o contrato.')
+    onError: err => setErrorMessage(err.message || 'Não foi possível cadastrar o contrato.'),
   });
-
-  const createFromDocument = async (data) => {
+  const archiveMutation = useMutation({
+    mutationFn: id => dataClient.entities.Contract.delete(id),
+    onSuccess: () => {
+      setErrorMessage('');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-contracts'] });
+    },
+    onError: err => setErrorMessage(err.message || 'Não foi possível arquivar.'),
+  });
+  const createFromDocument = async data => {
     const result = await dataClient.documents.importContract(data);
     await queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    setErrorMessage('');
     setShowAI(false);
-    setSaveError('');
     return result;
   };
 
-    const deleteMutation = useMutation({
-    mutationFn: (id) => dataClient.entities.Contract.delete(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      logAudit('exclusao', 'Contract', id, 'Contrato excluído');
-    }
+  const rows = (showArchived ? archived : active).filter(item => {
+    const term = search.trim().toLocaleLowerCase('pt-BR');
+    return (!term || [item.contract_number,item.supplier_name,item.object].some(value =>
+      String(value || '').toLocaleLowerCase('pt-BR').includes(term)))
+      && (showArchived || statusFilter === 'all' || item.status === statusFilter);
   });
 
-  const filtered = contracts.filter(c => {
-    const matchSearch = !search || 
-      c.contract_number?.toLowerCase().includes(search.toLowerCase()) ||
-      c.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.object?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || c.status === statusFilter;
-    const matchType = typeFilter === 'all'
-      || (typeFilter === 'price_registration' && (c.contract_type === 'registro_precos' || c.modality === 'registro_precos'))
-      || (typeFilter === 'contract' && c.contract_type !== 'registro_precos' && c.modality !== 'registro_precos');
-    return matchSearch && matchStatus && matchType;
-  });
+  const archiveContract = contract => {
+    if (window.confirm(`Arquivar o contrato ${contract.contract_number}? Ele deixará de aparecer entre os contratos ativos, mas seus dados e histórico continuarão preservados.`)) {
+      archiveMutation.mutate(contract.id);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Contratos</h1>
-          <p className="text-sm text-muted-foreground">{contracts.length} contrato(s) cadastrado(s)</p>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Contratos</h1>
+          <p className="text-sm text-muted-foreground">Consulte a execução, a vigência e o histórico de cada contrato.</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-        {!isAdmin && (
-          <Link to="/admin-requests">
-            <Button variant="outline" className="gap-2 text-amber-600 border-amber-300 hover:bg-amber-50">
-              <FileText className="w-4 h-4" /> Solicitar ao Admin
-            </Button>
-          </Link>
+        <div className="flex flex-wrap gap-2">
+          {!isManager && (
+            <Link to="/admin-requests"><Button variant="outline">Solicitar alteração</Button></Link>
+          )}
+          {isManager && (
+            <>
+              <Dialog open={showAI} onOpenChange={setShowAI}>
+                <DialogTrigger asChild><Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" /> Importar documento</Button></DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader><DialogTitle>Importar documento para cadastrar contrato</DialogTitle></DialogHeader>
+                  <ContractAIUpload onSave={createFromDocument} isLoading={false} />
+                </DialogContent>
+              </Dialog>
+              <Dialog open={showForm} onOpenChange={setShowForm}>
+                <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" /> Novo contrato</Button></DialogTrigger>
+                <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
+                  <DialogHeader><DialogTitle>Cadastrar contrato</DialogTitle></DialogHeader>
+                  <ContractForm onSave={data => createMutation.mutate(data)} isLoading={createMutation.isPending} />
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
+        <Button size="sm" variant={showArchived ? 'outline' : 'default'}
+          onClick={() => setShowArchived(false)}>Em acompanhamento ({active.length})</Button>
+        {isManager && (
+          <Button size="sm" variant={showArchived ? 'default' : 'outline'} className="gap-1.5"
+            onClick={() => setShowArchived(true)}><Archive className="h-4 w-4" /> Arquivados</Button>
         )}
-        {isAdmin && <Dialog open={showAI} onOpenChange={setShowAI}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Sparkles className="w-4 h-4" /> Importar Documento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Importar documento e cadastrar dados</DialogTitle></DialogHeader>
-              <ContractAIUpload onSave={createFromDocument} isLoading={createMutation.isPending} />
-            </DialogContent>
-          </Dialog>}
-          {isAdmin && <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-2"><Plus className="w-4 h-4" /> Novo <ChevronDown className="w-4 h-4" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => setShowForm(true)} className="gap-2 cursor-pointer">
-                <FileText className="w-4 h-4" /> Novo Contrato
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="gap-2 cursor-pointer">
-                <RouterLink to="/price-registrations" className="flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4" /> Novo Registro de Preços
-                </RouterLink>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>}
-          {isAdmin && <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Cadastrar Contrato</DialogTitle></DialogHeader>
-              <ContractForm onSave={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
-            </DialogContent>
-          </Dialog>}
-        </div>
+        <Link to="/price-registrations" className="ml-auto text-sm text-primary underline-offset-2 hover:underline">
+          Atas de registro de preços <ArrowRight className="inline h-3.5 w-3.5" />
+        </Link>
       </div>
 
-      {saveError && <div role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">{saveError}</div>}
-      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar contratos..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative min-w-0 flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label="Buscar contratos" placeholder="Buscar número, objeto ou fornecedor"
+            value={search} onChange={event => setSearch(event.target.value)} className="pl-9" />
         </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full sm:w-52"><SelectValue placeholder="Tipo" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="contract">Contratos</SelectItem>
-            <SelectItem value="price_registration">Registro de Preços</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-52"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="ativo">Ativo</SelectItem>
-            <SelectItem value="vencido">Vencido</SelectItem>
-            <SelectItem value="encerrado">Encerrado</SelectItem>
-            <SelectItem value="suspenso">Suspenso</SelectItem>
-            <SelectItem value="em_analise">Em Análise</SelectItem>
-            <SelectItem value="em_analise_slic">Providências no SLIC</SelectItem>
-            <SelectItem value="cancelado">Cancelado</SelectItem>
-          </SelectContent>
-        </Select>
+        {!showArchived && (
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger aria-label="Filtrar por status" className="w-full sm:w-56">
+              <SelectValue placeholder="Todos os status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {contractStatuses.map(option => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      {isError && <div role="alert" className="rounded-lg border border-destructive p-4 text-sm text-destructive">Não foi possível carregar os contratos: {loadError?.message}</div>}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+      {errorMessage && <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">{errorMessage}</p>}
+      {isError && <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">Não foi possível carregar os contratos: {error?.message}</p>}
+      {archiveError && showArchived && <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">Não foi possível consultar arquivados: {archiveError.message}</p>}
+      {(isLoading || (showArchived && loadingArchive)) ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="grid gap-3">
-          <AnimatePresence>
-            {filtered.map((c, i) => {
-              const daysLeft = c.end_date ? differenceInDays(new Date(c.end_date), new Date()) : null;
-              return (
-                <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: i * 0.03 }}>
-                  <Link to={`/contracts/${c.id}`}>
-                    <Card className="p-4 hover:shadow-md transition-all duration-200 border-0 shadow-sm cursor-pointer group">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-primary/5 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-                            <FileText className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.contract_number}</p>
-                            <p className="text-xs text-muted-foreground truncate">{c.supplier_name} — {c.object}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          {c.total_value > 0 && (
-                            <span className="text-xs font-medium text-muted-foreground hidden lg:block">{fmtBRL(c.total_value)}</span>
-                          )}
-                          {daysLeft !== null && daysLeft >= 0 && daysLeft <= 30 && (
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">{daysLeft}d restantes</Badge>
-                          )}
-                          {c.contract_type && (
-                            <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200 hidden sm:inline-flex max-w-[140px] truncate">{c.contract_type}</Badge>
-                          )}
-                          <Badge className={`${statusBadge[c.status]} border-0 text-[10px]`}>{statusLabel[c.status] || c.status?.replace('_',' ')}</Badge>
-                          {isAdmin && (
-                            <button
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); if(confirm('Excluir este contrato?')) deleteMutation.mutate(c.id); }}
-                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Nenhum contrato encontrado</p>
+        <div className="space-y-3">
+          {rows.map(contract => (
+            <Card key={contract.id} className="flex flex-col gap-3 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 gap-3">
+                <span aria-hidden="true" className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-primary/10">
+                  {showArchived ? <Archive className="h-5 w-5 text-primary" /> : <FileText className="h-5 w-5 text-primary" />}
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <p className="font-semibold">Contrato {contract.contract_number}</p>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">{contract.object}</p>
+                  <p className="text-xs text-muted-foreground">{contract.supplier_name || 'Fornecedor não informado'} · {money(contract.total_value)}</p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Badge variant="outline" className={contractStatusStyle(contract.status)}>{contractStatusLabel(contract.status)}</Badge>
+                    {showArchived && <span className="text-xs text-muted-foreground">Arquivado em {date(contract.deleted_at)}</span>}
+                    {!showArchived && contract.end_date && <span className="text-xs text-muted-foreground">Vigência até {date(contract.end_date)}</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
+                {showArchived ? (
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setHistoryId(contract.id)}>
+                    <History className="h-4 w-4" /> Ver histórico
+                  </Button>
+                ) : (
+                  <>
+                    <Link to={`/contracts/${contract.id}`}><Button size="sm" className="gap-1.5">Abrir contrato <ArrowRight className="h-4 w-4" /></Button></Link>
+                    {isManager && (
+                      <Button variant="outline" size="sm" disabled={archiveMutation.isPending}
+                        onClick={() => archiveContract(contract)} className="gap-1.5">
+                        <Archive className="h-4 w-4" /> Arquivar
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
+          ))}
+          {rows.length === 0 && (
+            <div className="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
+              {showArchived ? 'Nenhum contrato arquivado encontrado.' : 'Nenhum contrato encontrado com esses filtros.'}
             </div>
           )}
         </div>
       )}
+      <Dialog open={!!historyId} onOpenChange={open => { if (!open) setHistoryId(null); }}>
+        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto">
+          <DialogHeader><DialogTitle>Histórico do contrato arquivado</DialogTitle></DialogHeader>
+          {historyId && <ContractHistory contractId={historyId} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
