@@ -9,7 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 // Supabase tokens simply by requesting the URL. Never log or store token hashes.
 export default function ConfirmAccess() {
   const [invitation] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
+    // Fragment values are never sent to Vercel. Query params remain supported
+    // so previously-issued invitation links continue to work.
+    const params = new URLSearchParams(window.location.hash.slice(1) || window.location.search.slice(1));
     const type = params.get('type');
     const tokenHash = params.get('token_hash');
     return {
