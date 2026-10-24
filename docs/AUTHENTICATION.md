@@ -53,6 +53,18 @@ insert into public.platform_admins (user_id, notes)
 values ('AUTH_USER_UUID', 'Administrador inicial');
 ```
 
+## Bloqueio, exclusão de acesso e novo convite
+
+Na tela **Usuários**, os estados têm significados diferentes:
+
+- **Bloquear:** o vínculo da pessoa passa a `suspended`; ela perde acesso, mas permanece visível na seção **Usuários bloqueados**, de onde um administrador poderá desbloqueá-la.
+- **Excluir acesso:** remove fisicamente **somente a linha da pessoa em `organization_members` na organização selecionada**, e ela deixa de aparecer tanto na lista de usuários quanto na de bloqueados. Não cria um registro `revoked`.
+- **Convidar novamente:** como a identidade do Supabase Auth e o perfil global são preservados, o mesmo endereço pode receber novo convite com vínculo `invited` e aceitar o acesso novamente.
+
+A exclusão nesta tela **não apaga a conta global** `auth.users` nem o `profiles`. Isso é intencional: uma conta pode pertencer a outras organizações; contratos, fiscalizações, ocorrências, baixas, solicitações e auditorias devem conservar o histórico e as referências de autoria. O perfil deixa de aparecer **na organização da qual foi removido**.
+
+O servidor exige administrador ativo, impede remover o próprio acesso nesta tela e rejeita remoção de administradores da plataforma. Um gatilho SQL protege o último administrador ativo, inclusive para exclusões diretas e simultâneas. Não execute remoção global de usuários Auth como substituto da exclusão de acesso da organização.
+
 ## Recuperação de senha
 
 Adicione os endereços permitidos em **Authentication → URL Configuration**:
