@@ -194,7 +194,7 @@ deno test supabase/functions/_shared/*.test.ts
 - Auditoria, verificação de destinatários e tratamento seguro de erros.
 - Tokens de provedores e chaves administrativas **nunca** versionados ou expostos em `VITE_`.
 
-**Produção não homologada.** Ainda é necessário solucionar o CI SQL, validar fluxos e isolamento no ambiente remoto, comprovar entrega de e-mail, manter OAuth estável, configurar monitoramento e testar restauração integral de banco e arquivos.
+**Pronto para produção? Ainda não.** É necessário solucionar o CI SQL, validar fluxos e isolamento no ambiente remoto, comprovar entrega de e-mail, manter OAuth estável, configurar monitoramento e testar restauração integral de banco e arquivos.
 
 [Políticas de segurança](docs/SECURITY.md) · [Homologação remota](docs/HOMOLOGACAO-REMOTA.md) · [Backup e restauração](docs/PRODUCAO-RECUPERACAO.md)
 
