@@ -16,6 +16,7 @@ import AppLayout from '@/components/layout/AppLayout';
 const Login = lazy(() => import('@/pages/auth/Login'));
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
 const UpdatePassword = lazy(() => import('@/pages/auth/UpdatePassword'));
+const ConfirmAccess = lazy(() => import('@/pages/auth/ConfirmAccess'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Contracts = lazy(() => import('@/pages/Contracts'));
 const ContractDetail = lazy(() => import('@/pages/ContractDetail'));
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/update-password" element={<UpdatePassword />} />
+      <Route path="/auth/confirm" element={<ConfirmAccess />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<OrganizationGate />}>
