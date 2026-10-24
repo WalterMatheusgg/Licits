@@ -119,7 +119,7 @@ Deno.serve(async req => {
           !supplier_name || supplier_name.length > 250 || !Number.isFinite(amount) || amount < 0) {
         return json({error:'Informe número, objeto, fornecedor e valor total válido'},400);
       }
-      const cnpj = String(item.supplier_cnpj || '').replace(/\\D/g,'');
+      const cnpj = String(item.supplier_cnpj || '').replace(/\D/g,'');
       if (cnpj && cnpj.length !== 14) return json({error:'CNPJ deve conter 14 dígitos'},400);
       const created = await admin.rpc('create_integrated_contract',{
         p_organization_id:organization_id,
@@ -251,7 +251,14 @@ Deno.serve(async req => {
     });
   } catch (error) {
     const message = String(error instanceof Error ? error.message : error);
-    // No raw internal credential or provider response is returned.
-    return json({error: /Sessão|Faça login/.test(message) ? 'Não autenticado' : message}, 400);
+    // Do not disclose Postgres details, session tokens or provider response bodies.
+    if (/Sessão|Faça login|Perfil bloqueado/i.test(message)) {
+      return json({error:'Não autenticado'},401);
+    }
+    if (/Organização inacessível|Sem permissão/i.test(message)) {
+      return json({error:'Sem permissão para a organização'},403);
+    }
+    console.error('integration-contracts operation failed:', error instanceof Error ? error.name : 'unknown');
+    return json({error:'Falha interna na integração. Consulte os logs do serviço.'},500);
   }
 });
