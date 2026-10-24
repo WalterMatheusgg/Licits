@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LockKeyhole } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -13,12 +13,18 @@ export default function UpdatePassword() {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { updatePassword } = useAuth();
+  const { updatePassword, authUser, isLoadingAuth } = useAuth();
+  const [params] = useSearchParams();
+  const isInvitation = params.get('source') === 'invite';
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    if (!authUser) {
+      setError('Sua sessão não está ativa. Confirme o convite pelo link enviado ao e-mail.');
+      return;
+    }
 
     if (password.length < 8) {
       setError('Use uma senha com pelo menos 8 caracteres.');
@@ -44,11 +50,16 @@ export default function UpdatePassword() {
     <main className="min-h-screen flex items-center justify-center bg-muted/30 p-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Definir nova senha</CardTitle>
-          <CardDescription>Escolha uma nova senha para sua conta.</CardDescription>
+          <CardTitle>{isInvitation ? 'Crie sua senha de acesso' : 'Definir nova senha'}</CardTitle>
+          <CardDescription>{isInvitation ? 'Seu endereço foi confirmado. Crie a senha para acessar o Licits e aceitar o convite da organização.' : 'Escolha uma nova senha para sua conta.'}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLoadingAuth && !authUser && (
+              <Alert variant="destructive"><AlertDescription>
+                Não há sessão de confirmação ativa. <Link to="/login" className="underline">Voltar ao login</Link> ou abra novamente o link recebido.
+              </AlertDescription></Alert>
+            )}
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
             <div className="space-y-2">
               <Label htmlFor="password">Nova senha</Label>
@@ -76,7 +87,7 @@ export default function UpdatePassword() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button type="submit" className="w-full" disabled={submitting || !authUser || isLoadingAuth}>
               {submitting ? 'Salvando...' : 'Salvar nova senha'}
             </Button>
           </form>
