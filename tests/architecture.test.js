@@ -78,3 +78,15 @@ test('Production is not marked approved without remote tests',()=>{
   assert.ok(existsSync(join(root,'scripts/verify-remote-supabase.mjs')));
   assert.ok(existsSync(join(root,'docs/PRODUCAO-RECUPERACAO.md')));
 });
+
+test('Remote smoke checks high-risk tenant tables without writing to Supabase',()=>{
+  const script=read('scripts/verify-remote-supabase.mjs');
+  for(const table of ['contracts','profiles','organization_members','suppliers',
+    'documents','contract_items','item_withdrawals','fiscal_records','occurrences',
+    'audit_logs','integration_credentials','contract_budget_alerts','contract_expiry_alerts']){
+    assert.ok(script.includes("'"+table+"'"),'Remote isolation smoke omitted '+table);
+  }
+  assert.match(script,/if\(body\.length>0\)fail/);
+  assert.doesNotMatch(script,/method:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/);
+  assert.match(read('.github/workflows/remote-smoke.yml'),/workflow_dispatch/);
+});
